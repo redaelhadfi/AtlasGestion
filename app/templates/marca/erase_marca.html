@@ -1,0 +1,14 @@
+{% extends 'app/base.html' %}
+
+{% block contenido %}
+<h1>Eliminar Marca</h1>
+
+
+
+<form method="post" class="form">
+    <p>¿Estás seguro de que deseas eliminar la marca {{ marca.nombre }}?</p>
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a href="{% url 'list_marcas' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

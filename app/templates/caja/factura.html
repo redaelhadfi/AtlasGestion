@@ -1,0 +1,686 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block contenido %}
+{% load custom_filters %}
+<h2 class="my-4 text-center">Factura de Compra</h2>
+
+<!-- Filtros -->
+<div class="container-fluid mb-3 p-2 bg-white border rounded shadow-sm">
+    <form method="get" class="row align-items-center">
+        <!-- Buscar producto -->
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <input type="text" name="buscar" id="buscar" class="form-control form-control-sm" 
+                value="{{ palabra_clave }}" placeholder="Buscar producto...">
+        </div>
+
+        <!-- Categoría -->
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <select name="categoria" id="categoria" class="form-select form-select-sm">
+                <option value="">Categoría</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if categoria_filtro == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Negocio (solo para superusuario) -->
+        {% if request.user.is_superuser %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <select name="negocio" id="negocio" class="form-select form-select-sm">
+                <option value="">Negocio</option>
+                {% for negocio in negocios %}
+                    <option value="{{ negocio.id }}" {% if negocio_filtro == negocio.id %}selected{% endif %}>{{ negocio.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- Botones -->
+        <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-end gap-2 mb-2">
+            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#registrarProductoModal">Ingreso Manual</button>
+            <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#listEmpresaModal">Gestionar Perfiles de Cliente</button>
+        </div>
+    </form>
+</div>
+
+<!-- Contenido principal -->
+<div class="container-fluid">
+    <div class="row">
+        <!-- Tabla de Productos -->
+        <div class="col-md-7">
+            <h4 class="mb-3 text-center">Productos Disponibles</h4>
+            <table class="table table-striped table-bordered">
+                <thead class="table-ligth text-center">
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 10%;">Stock</th>
+                        <th style="width: 10%;">Precio</th>
+                        <th style="width: 10%;">Desc.</th>
+                        <th style="width: 1%;">Acciones</th> <!--Ajustar en CSS-->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    {% if producto.stock > 0 or producto.is_variable %}
+                    <tr>
+                        <td class="fs-5"><strong>{{ producto.nombre }}</strong>
+                            {% if producto.ropa.exists %}
+                            <div class="text-muted" style="font-size: 0.8em;">
+                                {% for ropa in producto.ropa.all %}
+                                    <li class="no-bullets">Talla: {{ ropa.nombre_talla }} ({{ ropa.unidades }} unidades)</li>
+                                {% endfor %}
+                            </div>
+                            {% elif producto.is_variable %}
+                            <div class="text-muted" style="font-size: 0.8em;">
+                                Precio Variable
+                            </div>
+                        {% endif %}</td>
+                        <td class="text-center">{{ producto.stock }}</td>
+                        <td class="text-center">{{ producto.precio_mayorista|clp }}</td>
+                        <td class="text-center">{{ producto.descuento_mayorista }}%</td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                {% if producto.ropa.exists %}
+                                    <!-- Si es ropa, abrir modal -->
+                                    <button type="button" 
+                                    class="btn btn-secondary w-auto btn-ropa-product"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalProductoRopa" 
+                                    data-producto-id="{{ producto.producto_id }}">
+                                    +
+                                    </button>
+                                {% elif producto.is_variable %}
+                                    <!-- Si es variable, abrir modal -->
+                                    <button type="button" 
+                                    class="btn btn-secondary w-auto btn-variable-product"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalProductoVariable" 
+                                    data-producto-id="{{ producto.producto_id }}">
+                                    +
+                                    </button>
+                                {% else %}
+                                    <!-- Si no es variable, agregar directamente -->
+                                    <form method="post" action="{% url 'agregar_al_carrito_factura' producto.producto_id %}">
+                                        {% csrf_token %}
+                                            <button type="submit" class="btn btn-success w-auto btnAñadir" style="">+</button>
+                                        </form>
+                                        {% endif %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#precioDescuentoModal{{ producto.producto_id }}">Desc</button>
+                            </div>
+                        </td> 
+                    <!-- Modal con el contenedor para el formulario cargado dinámicamente -->
+                    <div class="modal fade" id="modalProductoVariable" tabindex="-1" aria-labelledby="modalProductoVariableLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalProductoVariableLabel">Precio de Venta</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body" id="modal-body-variable-content">
+                                    <!-- Aquí se cargará el formulario dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Modal con el contenedor para el formulario cargado dinámicamente -->
+                    <div class="modal fade" id="modalProductoRopa" tabindex="-1" aria-labelledby="modalProductoRopaLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalProductoRopaLabel">Unidades a la Venta</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body" id="modal-body-ropa-content">
+                                    <!-- Aquí se cargará el formulario dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                                             
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Resumen del Carrito -->
+        <div class="col-md-5">
+            <h4 class="mb-3 text-center">Carrito de Compras</h4>
+            {% if carrito_items %}
+            <ul class="list-group shadow-sm">
+                {% for item in carrito_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ item.cantidad }}x {{ item.producto.nombre }}</strong><br>
+                        <small>P. Mayorista: {{ item.producto.precio_mayorista|clp }} | Total: {{ item.total_precio|clp }}</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <form method="post" action="{% url 'restar_producto_factura' item.producto.producto_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">-</button>
+                        </form>
+                        <form method="post" action="{% url 'agregar_al_carrito_factura' item.producto.producto_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success">+</button>
+                        </form>
+                        <form method="post" action="{% url 'eliminar_del_carrito_factura' item.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">x</button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="bg-light rounded shadow-sm" style="font-size: 0.8em;">
+                <p><strong>Subtotal:</strong> {{ carrito_subtotal|clp }}</p>
+                <p><strong>Descuento:</strong> -{{ carrito_descuento_total|clp }}</p>
+                <p><strong>IVA:</strong> {{ carrito_iva|clp }}</p>
+                <p class="text-end fs-5"><strong>Total:</strong> {{ carrito_total|clp }}</p>
+            </div>
+            <form method="POST" action="{% url 'confirmar_compra_factura' %}" class="mt-3">
+                {% csrf_token %}
+                <div class="">
+                    <textarea class="form-control" id="glosa" name="glosa" placeholder="Ingrese una glosa para la factura"></textarea>
+                </div>
+                <div class="pt-3">
+                    <select class="form-select" id="medio_pago" name="medio_pago" required>
+                        <option value="" disabled selected>Seleccione un medio de pago</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta_debito">Tarjeta Débito</option>
+                        <option value="tarjeta_credito">Tarjeta Crédito</option>
+                    </select>
+                </div>
+                <div class="py-3" style="position: relative;">
+                    <input type="email" id="correo" name="correo" class="form-control" placeholder="Escriba el correo electrónico">
+                    <input type="hidden" id="correo_id" name="correo_id">
+                    <div id="correo_suggestions" class="suggestions-box"></div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Finalizar Compra</button>
+            </form>
+            <form method="post" action="{% url 'vaciar_carrito_factura' %}" class="mt-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger w-100">Cancelar</button>
+            </form>
+            {% else %}
+            <p class="text-center text-muted">Tu carrito está vacío.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modales -->
+{% for producto in productos %}
+<div class="modal fade" id="precioDescuentoModal{{ producto.producto_id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'actualizar_descuento_factura' producto.producto_id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Asignar Descuento a {{ producto.nombre }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="number" name="descuento" class="form-control" value="{{ producto.descuento_mayorista }}" min="0" max="100">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+    <!-- Modal para gestión de empresas -->
+    <div class="modal fade ModalGestEmp" id="listEmpresaModal" tabindex="-1" aria-labelledby="listEmpresaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="listEmpresaModalLabel">Gestión de Empresas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="empresaForm" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="id_region">Región:</label>
+                            <select id="id_region" name="region" class="form-control">
+                                <option value="">Seleccione una región</option>
+                                {% for region in regions %}
+                                <option value="{{ region.id }}">{{ region.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_provincia">Provincia:</label>
+                            <select id="id_provincia" name="provincia" class="form-control" disabled>
+                                <option value="">Seleccione una provincia</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_comuna">Comuna:</label>
+                            <select id="id_comuna" name="comuna" class="form-control" disabled>
+                                <option value="">Seleccione una comuna</option>
+                            </select>
+                        </div>
+                        
+                        {{ empresa_form.as_p }}
+                        <p>Formato de RUT: <strong>Sin puntos y con guion (Ejemplo: 12345678-9)</strong></p>     
+
+                        <input type="hidden" name="accion" value="crear">
+                        <button type="submit" class="btn btn-primary">Guardar Empresa</button>
+                    </form>
+                    <hr>
+                    <ul id="empresa-list" class="list-group table-container">
+                        {% for empresa in empresas %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>{{ empresa.nombre }}</strong> ({{ empresa.correo }})</span>
+                            <span>
+                                <button class="btn btn-warning btn-sm editar-empresa" data-id="{{ empresa.id }}" data-bs-toggle="modal" data-bs-target="#editEmpresaModal">
+                                    Editar
+                                </button>                                
+                                <button class="btn btn-danger btn-sm eliminar-empresa" data-id="{{ empresa.id }}">Eliminar</button>
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar empresas -->
+    <div class="modal fade" id="editEmpresaModal" tabindex="-1" aria-labelledby="editEmpresaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editEmpresaModalLabel">Editar Empresa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editEmpresaForm" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="empresa_id" id="edit-empresa-id">
+                        <div class="form-group">
+                            <label for="edit-nombre">Nombre</label>
+                            <input type="text" name="nombre" id="edit-nombre" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-correo">Correo</label>
+                            <input type="email" name="correo" id="edit-correo" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rut">RUT</label>
+                            <input type="text" name="rut_empresa" id="edit-rut" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-direccion">Dirección</label>
+                            <input type="text" name="direccion" id="edit-direccion" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-telefono">Teléfono</label>
+                            <input type="text" name="telefono" id="edit-telefono" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Modal para ingreso manual -->
+     <div class="modal fade" id="registrarProductoModal" tabindex="-1" aria-labelledby="registrarProductoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registrarProductoLabel">Registrar Producto para Factura</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modal-body-content">
+                    <!-- El contenido dinámico del formulario se cargará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $("#id_region").change(function () {
+        var regionId = $(this).val();
+        if (regionId) {
+            $.ajax({
+                url: "{% url 'cargar_provincias' %}",
+                data: { 'region_id': regionId },
+                success: function (data) {
+                    $("#id_provincia").html('<option value="">Seleccione una provincia</option>');
+                    data.forEach(function (item) {
+                        $("#id_provincia").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_provincia").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_provincia").html('<option value="">Seleccione una provincia</option>').prop('disabled', true);
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+
+    $("#id_provincia").change(function () {
+        var provinciaId = $(this).val();
+        if (provinciaId) {
+            $.ajax({
+                url: "{% url 'cargar_comunas' %}",
+                data: { 'provincia_id': provinciaId },
+                success: function (data) {
+                    $("#id_comuna").html('<option value="">Seleccione una comuna</option>');
+                    data.forEach(function (item) {
+                        $("#id_comuna").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_comuna").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        $('.btn-ropa-product').click(function () {
+            const productoId = $(this).data('producto-id');
+            const url = `/carrito/factura/agregar/ropa/${productoId}/`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    $('#modal-body-ropa-content').html(data.html_form);
+                },
+                error: function () {
+                    alert('Error al cargar el formulario de tallas.');
+                }
+            });
+        });
+
+        $('.btn-variable-product').click(function () {
+            const productoId = $(this).data('producto-id');
+            const url = `/carrito/factura/agregar/precio/${productoId}/`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    $('#modal-body-variable-content').html(data.html_form);
+                },
+                error: function () {
+                    alert('Error al cargar el formulario del producto variable.');
+                }
+            });
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const medioPagoSelect = document.getElementById('medio_pago');
+        const pagarBtn = document.getElementById('pagar-btn');
+        const mensajeError = document.getElementById('mensaje-medio-pago');
+
+        medioPagoSelect.addEventListener('change', function () {
+            if (medioPagoSelect.value) {
+                pagarBtn.disabled = false;
+                mensajeError.style.display = 'none';
+            } else {
+                pagarBtn.disabled = true;
+                mensajeError.style.display = 'block';
+            }
+        });
+
+        pagarBtn.addEventListener('click', function (event) {
+            if (!medioPagoSelect.value) {
+                event.preventDefault();
+                mensajeError.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Crear o modificar empresa
+        $("#empresaForm").submit(function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: "{% url 'gestionar_empresas' %}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (response) {
+                    alert(response.message);
+                    if (response.success) location.reload();
+                },
+            });
+        });
+    
+        // Editar empresa
+        $(document).on('click', '.editar-empresa', function () {
+            const empresaId = $(this).data("id");
+        
+            $.ajax({
+                url: "{% url 'gestionar_empresas' %}",
+                data: { id: empresaId },
+                success: function (response) {
+                    // Llenar los campos del modal con los datos de la empresa
+                    $('#edit-empresa-id').val(response.id);
+                    $('#edit-nombre').val(response.nombre);
+                    $('#edit-correo').val(response.correo);
+                    $('#edit-rut').val(response.rut_empresa);
+                    $('#edit-direccion').val(response.direccion);
+                    $('#edit-telefono').val(response.telefono);
+        
+                    // Seleccionar región, provincia y comuna
+                    $('#id_region').val(response.region_id).change();
+                    setTimeout(() => {
+                        $('#id_provincia').val(response.provincia_id).change();
+                    }, 300);
+                    setTimeout(() => {
+                        $('#id_comuna').val(response.comuna_id);
+                    }, 600);
+        
+                    // Mostrar el modal de edición
+                    $('#editEmpresaModal').modal('show');
+                },
+                error: function () {
+                    alert("Error al cargar los datos de la empresa.");
+                }
+            });
+        });
+        
+    
+        // Eliminar empresa
+        $(".eliminar-empresa").click(function () {
+            const empresaId = $(this).data("id");
+            if (confirm("¿Desea eliminar esta empresa?")) {
+                $.post("{% url 'gestionar_empresas' %}", {
+                    empresa_id: empresaId,
+                    accion: "eliminar",
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                }).done(function (response) {
+                    alert(response.message);
+                    if (response.success) location.reload();
+                });
+            }
+        });
+    });
+    
+     
+</script>
+<script>
+    $(document).ready(function () {
+        function setupAutocomplete(inputSelector, hiddenSelector, suggestionsSelector, url) {
+            const $input = $(inputSelector);
+            const $hidden = $(hiddenSelector);
+            const $suggestions = $(suggestionsSelector);
+    
+            $input.on("input", function () {
+                const term = $input.val().trim();
+                if (term.length < 2) {
+                    $suggestions.hide();
+                    return;
+                }
+    
+                $.ajax({
+                    url: url,
+                    data: { term: term },
+                    dataType: "json",
+                    success: function (data) {
+                        $suggestions.empty().show();
+                        if (data.length === 0) {
+                            $suggestions.hide();
+                            return;
+                        }
+                        data.forEach((item) => {
+                            $suggestions.append(
+                                `<div class="suggestion-item" data-id="${item.id}" data-value="${item.value}">${item.label}</div>`
+                            );
+                        });
+    
+                        $(".suggestion-item").on("click", function () {
+                            const value = $(this).data("value");
+                            const id = $(this).data("id");
+    
+                            $input.val(value);
+                            $hidden.val(id);
+                            $suggestions.hide();
+                        });
+                    },
+                });
+            });
+    
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                    $suggestions.hide();
+                }
+            });
+        }
+    
+        setupAutocomplete(
+            "#correo", // Input del correo
+            "#correo_id", // Campo oculto para ID del correo
+            "#correo_suggestions", // Contenedor de sugerencias
+            "/buscar_correo/" // URL de búsqueda
+        );
+    });
+    
+    
+</script>
+
+<script>   
+    $(document).ready(function () {
+        const $input = $("#nombre_producto");
+        const $hidden = $("#producto_id");
+        const $suggestions = $("#producto_suggestions");
+    
+        $input.on("input", function () {
+            const term = $input.val().trim();
+            if (term.length < 2) {
+                $suggestions.hide();
+                return;
+            }
+    
+            $.ajax({
+                url: "/buscar_producto/",
+                data: { term: term },
+                dataType: "json",
+                success: function (data) {
+                    $suggestions.empty().show();
+                    if (data.length === 0) {
+                        $suggestions.hide();
+                        return;
+                    }
+                    data.forEach((item) => {
+                        $suggestions.append(
+                            `<div class="suggestion-item" data-id="${item.id}" data-value="${item.label}">${item.label}</div>`
+                        );
+                    });
+    
+                    $(".suggestion-item").on("click", function () {
+                        const value = $(this).data("value");
+                        const id = $(this).data("id");
+    
+                        $input.val(value);
+                        $hidden.val(id);
+                        $suggestions.hide();
+                    });
+                },
+            });
+        });
+    
+        $(document).on("click", function (e) {
+            if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                $suggestions.hide();
+            }
+        });
+    });
+    
+</script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const productosConBajoStock = [{% for producto in productos %}{% if producto.stock < 5 %}{{ producto.producto_id }}, {% endif %}{% endfor %}];
+        
+        if (productosConBajoStock.length > 0) {
+            document.getElementById('alerta-bajo-stock').style.display = 'block';
+        }
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Cargar el formulario dinámicamente al abrir el modal
+        $('#registrarProductoModal').on('show.bs.modal', function () {
+            $.get("{% url 'reg_prod_factura' %}", function (data) {
+                $('#modal-body-content').html(data);
+    
+                // Asegúrate de no registrar múltiples eventos al formulario
+                $('#reg-prod-factura-form').off('submit');
+                $('#reg-prod-factura-form').on('submit', function (e) {
+                    e.preventDefault();
+                    const $form = $(this);
+                    const $submitButton = $form.find('button[type="submit"]');
+    
+                    // Deshabilitar el botón para prevenir doble clic
+                    $submitButton.prop('disabled', true);
+    
+                    $.ajax({
+                        url: "{% url 'reg_prod_factura' %}",
+                        type: "POST",
+                        data: $form.serialize(),
+                        success: function (data) {
+                            if (data.success) {
+                                $('#registrarProductoModal').modal('hide');
+                                location.reload(); // Si es necesario, recargar después del éxito
+                            } else {
+                                $('#modal-body-content').html(data.html_form);
+                            }
+                        },
+                        error: function () {
+                            alert("Error al intentar registrar el producto.");
+                        },
+                        complete: function () {
+                            // Rehabilitar el botón tras completar
+                            $submitButton.prop('disabled', false);
+                        }
+                    });
+                });
+            });
+        });
+    });
+    
+</script>
+
+
+{% endblock %}

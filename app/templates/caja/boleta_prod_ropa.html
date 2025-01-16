@@ -1,0 +1,46 @@
+<form method="post" id="ropa-form">
+    {% csrf_token %}
+    <input type="hidden" id="producto_id_input" name="producto_id" value="{{ producto.producto_id }}">
+    <div class="form-group">
+        <label for="nombre_talla">Talla</label>
+        <select name="nombre_talla" id="nombre_talla" class="form-control" required>
+            {% for talla in tallas %}
+                <option value="{{ talla.nombre_talla }}">
+                    {{ talla.nombre_talla }} ({{ talla.unidades }} disponibles)
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="unidades">Unidades</label>
+        <input type="number" name="unidades" id="unidades" class="form-control" min="1" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Añadir al Carrito</button>
+    <div id="error-container" class="alert alert-danger mt-3 d-none"></div>
+</form>
+
+
+<script>
+    $(document).ready(function () {
+        $('#ropa-form').submit(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: "{% url 'boleta_prod_ropa' producto.producto_id %}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        $('#error-container').removeClass('d-none').text(data.error || "Error al procesar el formulario.");
+                    }
+                },
+                error: function () {
+                    $('#error-container').removeClass('d-none').text("Ocurrió un error inesperado.");
+                }
+            });
+        });
+    });
+</script>

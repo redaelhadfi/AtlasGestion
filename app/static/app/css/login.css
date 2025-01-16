@@ -1,0 +1,105 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body{
+    font-family: sans-serif;
+   /*  display: flex; */
+    min-height: 100vh;
+   /*  background-color: rgb(246, 236, 255); */
+}
+
+
+.form{
+    transform: translateY(50px);
+    color:#faf8f8;
+    background-color: #000000;
+    margin: auto;
+    width: 90%;
+    max-width: 400px;
+    padding: 4.5em 3em;
+    border-radius: 10px;
+    box-shadow: 0 5px 10px -5px rgb(0 0 0 -30%);
+    text-align: center;
+    border: 4px solid rgb(70, 141, 141);
+    transition: all ease .5s;
+    -webkit-box-shadow: 10px 10px 16px 3px rgba(0,0,0,0.75);
+    -moz-box-shadow: 10px 10px 16px 3px rgba(0,0,0,0.75);
+    box-shadow: 10px 10px 16px 3px rgba(0,0,0,0.75);
+} 
+.form:hover{
+    /* transform: scale(.3em); */
+    border-radius: 0px 55px 0px 55px;
+-moz-border-radius: 0px 55px 0px 55px;
+-webkit-border-radius: 0px 55px 0px 55px;
+border: 4px solid rgb(70, 141, 141);
+}
+
+.form_title{
+   /*  font-size: 3rem; */
+    margin-bottom: .5rem;
+}
+.form_container{
+    margin-top: 3em;
+    display: grid;
+    gap: 2.5em;
+   /*  background-color: #5757577e; */
+}
+.form_container .form_group{
+    /* background-color: aliceblue; */
+}
+.form_container .form_group label{
+    /* background-color: aqua; */
+    transform: translateY(50px);
+}
+.form_container .form_group input{
+    /* background-color: aqua; */
+    transform: translateY(-25px);
+}
+.form_group{
+    position: relative;
+    --color: #5757577e;
+    /* background-color: #acaaaa; */
+}
+
+ form .form_label{
+    color: var(--color);
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    left: 5px;
+    transform: translateY(60px);
+    transition: transform .5s, color .3s;
+}
+
+.form_line{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color:  blue; ;
+    transform: scale(0);
+    transform: left bottom;
+    transition: transform .4s;
+}
+.form_input:focus ~ .form_line,
+.form_input:not(:placeholder-shown) ~ .form_line
+{
+    transform: scale(1);
+}
+
+.recuperarPass a{
+    
+    text-decoration: none;
+    color: white;
+    
+        
+}
+
+@media (max-width){
+    .form_title{
+        font-size: 1.8rem;
+    }
+}

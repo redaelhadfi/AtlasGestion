@@ -1,0 +1,118 @@
+{% block add_proveedor_form %}
+<div class="card mb-5">
+    <div class="card-body">
+        <h4 class="card-title">Registrar Nuevo Proveedor</h4>
+        <form method="post" class="formProv">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="id_region">Región:</label>
+                        <select id="id_region" name="region" class="form-control">
+                            <option value="">Seleccione una región</option>
+                            {% for region in regions %}
+                            <option value="{{ region.id }}">{{ region.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="id_provincia">Provincia:</label>
+                        <select id="id_provincia" name="provincia" class="form-control" disabled>
+                            <option value="">Seleccione una provincia</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="id_comuna">Comuna:</label>
+                        <select id="id_comuna" name="comuna" class="form-control" disabled>
+                            <option value="">Seleccione una comuna</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="id_nombre">Nombre:</label>
+                        <input type="text" id="id_nombre" name="nombre" class="form-control">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="id_rut_empresa">RUT Empresa:</label>
+                        <input type="text" id="id_rut_empresa" name="rut_empresa" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="id_telefono">Teléfono:</label>
+                        <input type="text" id="id_telefono" name="telefono" class="form-control">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="id_correo">Correo:</label>
+                        <input type="email" id="id_correo" name="correo" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <p class="m-5 mt-1">Formato de RUT: <strong>Sin puntos y con guion (Ejemplo: 12345678-9)</strong></p>
+            <button type="submit" class="btn btn-primary">Registrar</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $("#id_region").change(function () {
+        var regionId = $(this).val();
+        if (regionId) {
+            $.ajax({
+                url: "{% url 'cargar_provincias' %}",
+                data: { 'region_id': regionId },
+                success: function (data) {
+                    $("#id_provincia").html('<option value="">Seleccione una provincia</option>');
+                    data.forEach(function (item) {
+                        $("#id_provincia").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_provincia").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_provincia").html('<option value="">Seleccione una provincia</option>').prop('disabled', true);
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+
+    $("#id_provincia").change(function () {
+        var provinciaId = $(this).val();
+        if (provinciaId) {
+            $.ajax({
+                url: "{% url 'cargar_comunas' %}",
+                data: { 'provincia_id': provinciaId },
+                success: function (data) {
+                    $("#id_comuna").html('<option value="">Seleccione una comuna</option>');
+                    data.forEach(function (item) {
+                        $("#id_comuna").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_comuna").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+</script>
+{% endblock %}

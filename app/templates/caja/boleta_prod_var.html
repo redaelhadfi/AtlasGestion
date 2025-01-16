@@ -1,0 +1,48 @@
+<!-- boleta_prod_var.html -->
+<form method="post" id="reg-prod-var-form">
+    {% csrf_token %}
+    <input type="number" name="precio" class="form-control" required>
+    <!-- Campo oculto para pasar el producto_id correctamente -->
+    <input type="hidden" id="producto_id_input" name="producto_id" value="{{ producto.producto_id }}">
+    {{ variable_form.as_p }}
+    <button type="submit" class="btn btn-primary">Añadir al Carrito</button>
+    <div class="alert alert-danger mt-3 d-none" id="error-container"></div>
+</form>
+
+<script>
+    $(document).ready(function () {
+        $('.btn-variable-product').click(function () {
+            var productoId = $(this).data('producto-id');
+            $('#producto_id_input').val(productoId);  // Actualiza el campo oculto al abrir el modal
+        });
+
+        $('#reg-prod-var-form').submit(function (e) {
+            e.preventDefault();
+            var productoId = $('#producto_id_input').val();  // Se asegura de leer el ID correcto
+            var nuevoPrecio = $(this).find('input[name="precio"]').val();
+
+            if (!productoId) {
+                alert('Error: El producto no fue identificado.');
+                return;
+            }
+
+            var url = "/carrito/boleta/agregar/precio/" + productoId + "/";
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert("Producto variable agregado correctamente.");
+                        location.reload();
+                    } else {
+                        $('#error-container').removeClass('d-none').text(data.errors.precio_form_errors || "Error al agregar.");
+                    }
+                },
+                error: function () {
+                    $('#error-container').removeClass('d-none').text("Error al intentar agregar el producto.");
+                }
+            });
+        });
+    });
+</script>

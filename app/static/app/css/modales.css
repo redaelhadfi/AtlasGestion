@@ -1,0 +1,493 @@
+/*-////////////////////////////////////////////*/
+
+/*========== modal agregar prod inventario*/
+
+#addProdModal{
+    /*  background-color: aqua; */
+  
+  }
+  #addProdModal .modal-body p{
+/*      background-color: rgb(251, 255, 0); */
+     height: 60px;
+ }
+
+ /*ventana principal externa*/
+ #addProdModal .modal-dialog{
+/*   background-color: red; */
+     min-width: 1300px;
+     max-height: 350px;
+ }
+ #addProdModal .modal-dialog .modal-content{
+ /*  background-color: rgb(23, 233, 58); */
+      min-width:1000px;
+      min-height: 650px;
+  }
+
+ .modal-body input{
+  margin:5px, -15px;
+  text-align: center;
+       transform: translateY(-20px);
+      /*  margin-top: 5px; */
+      /*  background-color: blue; */
+       width: 100%;
+       height: 50px;
+       border-radius: 5px;
+       border: 1px solid #aaa5a5ee;
+}
+.modal-body select{
+  transform: translateY(-20px);
+  border: 1px solid #aaa5a5ee;
+  
+
+}
+/* modal interno agregar producto inventario */
+#add-prod-form{
+width: 100%;
+   /*  background-color: aqua; */
+    display:grid; 
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0 50px;
+    min-height: 550px;
+ 
+  
+}
+
+
+
+#add-prod-form p{
+
+   height: 60px;
+  
+}
+#add-prod-form label{
+   margin-top: -5px;
+   transform: translateY(-20px);
+}
+
+
+#add-prod-form input{
+   margin:5px, -15px;
+   text-align: center;
+
+        width: 100%;
+        height: 50px;
+        border-radius: 5px;
+        border: 1px solid #aaa5a5ee;
+       
+}
+
+
+#add-prod-form select{
+   transform: translateY(-20px);
+   border: 1px solid #aaa5a5ee;
+} 
+
+
+
+#add-prod-form .mb-3 label{
+
+}
+#add-prod-form .mb-3 #categoria_nombre{
+
+  transform: translateY(-20px);
+}
+#add-prod-form .mb-3 #categoria_suggestions{
+ background-color: aquamarine;
+width: 280px;
+/* transform: translate(755px, 190px); */
+transform: translate(345px, 10px);
+border-radius: 5px;
+
+}
+#add-prod-form .marcaMod label{
+
+transform: translateY(-20px);
+}
+#add-prod-form .mb-3 #marca_nombre{
+
+transform: translateY(-20px);
+}
+#add-prod-form .mb-3 #marca_suggestions{
+background-color: aquamarine;
+width: 280px;
+transform: translate(672px, 10px);
+border-radius: 5px;
+
+}
+
+#add-prod-form .checkboxes{
+/*  background-color: rgb(99, 43, 231); */
+width: 200px;
+
+height: 50px;
+transform: translate(-500px, 180px);
+position: relative;
+
+
+
+}
+#add-prod-form .checkboxes .tituloCheckBox label{
+width: auto;
+/* color: #082bc7ee; */
+}
+
+#add-prod-form .checkboxes input{
+transform: translateY(-30px);
+width:30px;
+
+}
+#add-prod-form .checkboxes label{
+transform: translateY(-50px);
+width: 80px;
+
+}
+
+
+#add-prod-form #ropaFields{
+background-color: #f2f4fcee;
+max-height: 300px;
+display: none;
+width: 600px;
+border: 2px solid #e4e5e9ee;
+border-radius: 5px;
+transform: translate(-500px, 150px);
+}
+#add-prod-form  #ropaFields .tituloRopa label{
+
+transform: translateY(-10px);
+}
+#add-prod-form  #ropaFields label{
+background-color: #c6c8d4ee;
+border-radius: 5px;
+}
+#add-prod-form #ropaFields .mb-3{
+
+border: 1px solid rgb(228, 217, 217);
+display:grid; 
+grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+gap: 20px; 
+
+}
+#add-prod-form #ropaFields .mb-3 input{
+
+width: 200px;
+transform: translate(-150px);
+}
+#add-prod-form #ropaFields .mb-3 select{
+
+width: 200px;
+transform: translate(-150px);
+}
+
+#add-prod-form  #unidadesFields{
+
+transform: translateX(-150px);
+display: none;
+}
+#add-prod-form  #unidadesFields label{
+  background-color: #b8bbb7ee;
+  transform: translateY(50px);
+  border-radius: 5px;
+  
+  }
+#add-prod-form  #unidadesFields input{
+
+  transform: translateY(50px);
+}
+#add-prod-form  #variableFields{
+background-color: #082bc7ee;
+display: none;
+}
+#GuardarModInv{
+max-height: 50px;
+position: absolute;
+transform: translate(1150px, 500px);
+}
+
+/*==================== editar producto*/
+.modal-body{
+ /*   background-color: rgb(44, 161, 28); */
+   text-align: left;
+
+}
+.modal-body label{
+  /*  background-color: rebeccapurple; */
+   margin-top: -5px;
+   
+   transform: translateY(-20px);
+   
+}
+.modal-body p{
+  /*  background-color: aqua; */
+   height: 60px;
+}
+
+
+
+
+/*========== modal devolver factura*/
+.devFact{
+  width: 95%;
+ display: flex;
+ flex-wrap: wrap;
+/*   gap: 10px; */
+ align-items: center;
+ /* min-height: 500px; */
+
+}
+/* .devFact label{
+  background-color: aqua;
+ display: flex;
+} */
+
+.devFact select{
+  /* background-color: aqua; */
+  width: 300px;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid #aaa5a5ee;
+  transform: translateX(30px);
+
+}
+.devFact input{
+/*   background-color: red; */
+  width: 300px;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid #aaa5a5ee;
+ 
+  
+}
+.devFact textarea{
+/* s */
+  width: 300px;
+  height: 50px;
+  border-radius: 5px;
+  border: 1px solid #aaa5a5ee;
+  transform: translateX(60px);
+ /*  transform: translate(680px, -175px); */
+
+}
+.devFact .btnelim{
+/*   background-color:#1499a3; */
+  margin-left: 88px;
+}
+/*========== devolver factura*/
+.devolucion-form {
+  border: 3px solid #ffffffee;
+  border-radius: 5px;
+/* background-color: rgb(4, 46, 46);  */ 
+display: flex; 
+width: 100%;
+/* min-height: 200px; */
+background-color: rgb(239, 235, 243);
+
+
+}
+.devolucion-form label{
+  width: 200px;
+  background-color: rgb(175, 177, 175);
+  display: flex;
+  transform: translateX(80px);
+  text-align: center;
+  border-radius: 5px;
+}
+.devolucion-form input{
+  text-align: center;
+  /* background-color: red; */
+  transform: translateX(45px);
+}
+.devolucion-form button{
+  background-color: red;
+  transform: translate(65px, 25px);
+  height: 50px;
+}
+.devolucion-form select{
+ /*  background-color: aqua; */
+  text-align: center;
+}
+/*===================== editar producto*/
+.editar{
+      /*  background-color: antiquewhite; */
+       width: 80%;
+   }
+.editar label{
+      /*  background-color: aqua; */
+      margin-top: -5px;
+      transform: translateY(-20px);
+}
+.editar select{
+   /*     background-color: rebeccapurple; */
+       width: 50%;
+       height: 50px;
+       border-radius: 5px;
+       border: 1px solid #aaa5a5ee;
+       transform: translateX(-50px);
+       text-align: center;
+}
+.editar input{
+  text-align: center;
+       transform: translateY(-20px);
+       margin-top: 5px;
+      /*  background-color: blue; */
+       width: 100%;
+       height: 50px;
+       border-radius: 5px;
+       border: 1px solid #aaa5a5ee;
+       
+     
+}
+
+/*modal gestionar empresa factura.css*/
+
+.ModalGestEmp{
+  /*   background-color: aqua; */
+}
+.ModalGestEmp .modal-dialog{
+   /*  background-color: rebeccapurple; */
+ /*    width: 110%; */
+   
+}
+.ModalGestEmp .modal-dialog .modal-content{
+   /*  background-color: rgb(78, 224, 78); */
+    width: 160%;
+    transform: translateX(-260px);
+}
+.ModalGestEmp .modal-dialog .modal-content .modal-body{
+/*     background-color: yellow; */
+    height: 600px;
+}
+.ModalGestEmp .modal-dialog .modal-content .modal-body form .form-group{
+   /*  background-color: rgb(2, 23, 31); */
+    transform:translateX(5px);
+    height: 50px;
+    
+}
+.ModalGestEmp .modal-dialog .modal-content .modal-body form{
+    /* background-color: rgb(247, 0, 255); */
+    transform: translateY(7px);
+    height: 300px;
+    display:grid; 
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 35px;
+   
+}
+.ModalGestEmp .modal-dialog .modal-content .modal-body form label{
+/*     background-color: rgb(0, 225, 255); */
+    display: block;
+    width: fit-content;
+    transform: translateY(-20px);
+
+    
+}
+.ModalGestEmp .modal-dialog .modal-content .modal-body form input{
+  /*   background-color: rgb(0, 102, 255); */
+    width: 200px;
+}
+/* MODAL EDITAR EMPRESA /////////////////////////////////////// */
+#editEmpresaModal{
+  /*      background-color: aqua; */
+   }
+   #editEmpresaModal .modal-dialog{
+   /*     background-color: rebeccapurple; */
+   }
+   #editEmpresaModal .modal-dialog .modal-content{
+     /*   background-color: red; */
+   }
+   #editEmpresaModal .modal-dialog .modal-content form{
+       /* background-color: rgb(136, 255, 0); */
+       transform: translateY(7px);
+   }
+   #editEmpresaModal .modal-dialog .modal-content form .form-group label{
+       /* background-color: rgb(0, 26, 255); */
+       transform: translateY(-20px);
+   }
+   
+   #editEmpresaModal .modal-dialog .modal-content button{
+     /*   background-color: rgb(136, 255, 0); */
+       transform: translate(55px, -25px);
+   
+   }
+   /* md//////////////////////////////////////////////////////////////////////*/
+   /*modal reg_prod_boleta //////////////////////////////*/
+
+
+
+.modEditProdInvent{
+/*   background-color: aqua; */
+}
+.modEditProdInvent .modal-dialog{
+  /* background-color: rgb(102, 255, 0); */
+  min-width: 1300px;
+}
+.modEditProdInvent .modal-dialog .modal-content{
+  /* background-color: #58c028ee; */
+  
+}
+.modEditProdInvent .modal-dialog .modal-content{
+ /*  background-color: #58c028ee; */
+  
+}
+
+
+
+
+
+.formu-edit{
+  width: 100%;
+ /*   background-color: aqua; */
+   display:grid; 
+   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+   gap: 0 50px;
+   min-height: 550px;
+}
+
+.formu-edit .suggCat #categoria_suggestions{
+  background-color: aquamarine;
+  width: 280px;
+  transform: translate(345px, 8px);
+}
+.formu-edit .suggMarca #marca_suggestions{
+  background-color: aquamarine;
+  width: 280px;
+  transform: translate(675px, 8px);
+}
+.formu-edit #ropaFields{
+  /* background-color: red; */
+  transform: translate(-500px, 100px);
+  height: 400px;
+  min-width: 700px;
+  
+
+}
+.formu-edit #ropaFields #ropaFormsContainer{
+/* background-color: aqua; */
+/*   display:grid; 
+   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+   gap: 0 5px; */
+}
+.formu-edit #ropaFields #ropaFormsContainer .ropa-form{
+/*   background-color: rebeccapurple; */
+  border: 1px solid #61636dee;
+  border-radius: 5px;
+  display:grid; 
+   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+   gap: 20px; 
+}
+.formu-edit #ropaFields #ropaFormsContainer .ropa-form select{
+ /*  background-color: aqua; */
+  transform: translateX(-217px);
+}
+.formu-edit #ropaFields #ropaFormsContainer .ropa-form input{
+ /*  background-color: aquamarine; */
+  transform: translate(433px, -68px);
+}
+.formu-edit #ropaFields #ropaFormsContainer .ropa-form label{
+  background-color: rgb(146, 140, 140);
+  border-radius: 5px;
+  color: white;
+}
+.formu-edit #ropaFields #ropaFormsContainer .ropa-form .remove-ropa-form{
+  background-color: #ff0202ee;
+  transform: translate(330px, 10px);
+}

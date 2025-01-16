@@ -1,0 +1,50 @@
+<form id="reg-prod-factura-form">
+    {% csrf_token %}<form method="post" id="reg-prod-factura-form">
+    <div class="form-group">
+        <label for="nombre_producto">Nombre del Producto</label>
+        <input type="text" id="nombre_producto" name="nombre" class="form-control">
+        <div id="producto_suggestions" class="suggestions-box"></div>
+        <input type="hidden" id="producto_id" name="producto_id">
+    </div>
+    
+    
+    {{ form.as_p }}
+    {{ variable_form.as_p }}
+    
+    <button type="submit" class="btn btn-primary" id="btn-submit-prod">
+        Registrar Producto
+    </button>
+</form>
+
+<script>
+    $(document).ready(function () {
+        $('#reg-prod-factura-form').on('submit', function (e) {
+            e.preventDefault();
+
+            // Deshabilitamos el botón para prevenir doble clic
+            const $submitBtn = $('#btn-submit-prod');
+            $submitBtn.prop('disabled', true);
+
+            $.ajax({
+                url: "{% url 'reg_prod_factura' %}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert("Producto agregado al carrito.");
+                        // Decide si recargas o cambias de vista
+                        location.reload();
+                    } else {
+                        alert(data.message || "Hubo un problema al registrar el producto.");
+                    }
+                },
+                error: function () {
+                    alert("Error al intentar registrar el producto.");
+                },
+                complete: function () {
+                    $submitBtn.prop('disabled', false);
+                }
+            });
+        });
+    });
+</script>

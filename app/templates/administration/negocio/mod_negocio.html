@@ -1,0 +1,59 @@
+{% extends 'app/base.html' %}
+
+{% block contenido %}
+
+<div class="tituloMN">
+<h1>Modificar Negocio</h1>
+</div>
+<div class="card mb-5">
+    <div class="card-body">
+        <form method="post" class="formModNeg">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $("#id_region").change(function () {
+        var regionId = $(this).val();
+        if (regionId) {
+            $.ajax({
+                url: "{% url 'cargar_provincias' %}",
+                data: { 'region_id': regionId },
+                success: function (data) {
+                    $("#id_provincia").html('<option value="">Seleccione una provincia</option>');
+                    data.forEach(function (item) {
+                        $("#id_provincia").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_provincia").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_provincia").html('<option value="">Seleccione una provincia</option>').prop('disabled', true);
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+
+    $("#id_provincia").change(function () {
+        var provinciaId = $(this).val();
+        if (provinciaId) {
+            $.ajax({
+                url: "{% url 'cargar_comunas' %}",
+                data: { 'provincia_id': provinciaId },
+                success: function (data) {
+                    $("#id_comuna").html('<option value="">Seleccione una comuna</option>');
+                    data.forEach(function (item) {
+                        $("#id_comuna").append('<option value="' + item.id + '">' + item.nombre + '</option>');
+                    });
+                    $("#id_comuna").prop('disabled', false);
+                }
+            });
+        } else {
+            $("#id_comuna").html('<option value="">Seleccione una comuna</option>').prop('disabled', true);
+        }
+    });
+</script>
+{% endblock %}

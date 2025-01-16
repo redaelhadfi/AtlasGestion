@@ -1,0 +1,20 @@
+{% extends 'app/base.html' %}
+
+{% block contenido %}
+<div class="titulosMUS">
+<h1>Modificar Usuario Staff</h1>
+
+<h4>Datos del Usuario</h4>
+</div>
+<form method="post" class="formModStaff">
+    {% csrf_token %}
+    
+    {{ user_form.as_p }}
+    
+    
+    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    <a href="{% url 'change_password' %}" class="btn btn-secondary mt-3">Cambiar Contraseña</a>
+</form>
+<!-- Botón para cambiar la contraseña -->
+
+{% endblock %}

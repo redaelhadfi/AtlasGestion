@@ -1,0 +1,42 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block contenido %}
+{% load crispy_forms_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Iniciar Sesión</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+
+        <form action="" method="post" class="form">
+            <h2 class="form_title">Inicia Sesion</h2>
+            
+            <div class="form_container contLogin pt-3">
+                <div class="form_group">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+            <button type="submit" class="btn btn-primary botonLogin">Iniciar Sesión</button>
+        </form>
+    
+    <div class="recuperarPass">
+    <span>Olvidaste tu contraseña?...</span>
+    <br> </br>
+        <a href="{% url 'password_reset' %}">🔒Recuperar contraseña</a>
+    </div>
+               
+</div>
+           
+</div>
+             
+</body>
+</html>
+
+{% endblock %}
+
+
+
+
+

@@ -1,0 +1,188 @@
+{% load static %}
+<form method="post" id="mod-prod-form-{{ producto.producto_id }}" class="formu-edit">
+<div class="col-auto">
+    {% csrf_token %}
+    {{ producto_form.as_p }}
+</div>
+    <div class="suggCat">
+        <label for="categoria_nombre">Categoría</label>
+        <input type="text" id="categoria_nombre" name="categoria_nombre" class="form-control" placeholder="Escribe para buscar o crear" value="{{ categoria_nombre }}">
+        <input type="hidden" id="categoria_id" name="categoria_id" value="{{ categoria_id }}">
+
+        <div id="categoria_suggestions" class="suggestions-box"></div>
+    </div>
+
+    <div class="suggMarca">
+        <label for="marca_nombre">Marca</label>
+        <input type="text" id="marca_nombre" name="marca_nombre" class="form-control" placeholder="Escribe para buscar o crear" value="{{ marca_nombre }}">
+        <input type="hidden" id="marca_id" name="marca_id" value="{{ marca_id }}">
+
+        <div id="marca_suggestions" class="suggestions-box"></div>
+    </div>
+
+    {% if ropa_forms %}
+    <div id="ropaFields" class="table-container">
+        <input type="hidden" id="ropa-TOTAL_FORMS" name="ropa-TOTAL_FORMS" value="{{ ropa_forms|length }}">
+        <label>Desglose de unidades:</label>
+        <div id="ropaFormsContainer">
+            {% for ropa in ropa_forms %}
+            <div class="ropa-form mb-3 p-3">
+                <label for="form-{{ forloop.counter0 }}-nombre_talla">Talla:</label>
+                <select name="form-{{ forloop.counter0 }}-nombre_talla" class="form-control">
+                    <option value="XS" {% if ropa.nombre_talla == "XS" %}selected{% endif %}>XS</option>
+                    <option value="S" {% if ropa.nombre_talla == "S" %}selected{% endif %}>S</option>
+                    <option value="M" {% if ropa.nombre_talla == "M" %}selected{% endif %}>M</option>
+                    <option value="L" {% if ropa.nombre_talla == "L" %}selected{% endif %}>L</option>
+                    <option value="XL" {% if ropa.nombre_talla == "XL" %}selected{% endif %}>XL</option>
+                    <option value="XXL" {% if ropa.nombre_talla == "XXL" %}selected{% endif %}>XXL</option>
+                    <option value="XXXL" {% if ropa.nombre_talla == "XXXL" %}selected{% endif %}>XXXL</option>
+                </select>
+
+                <label for="form-{{ forloop.counter0 }}-unidades">Cantidad:</label>
+                <input type="number" name="form-{{ forloop.counter0 }}-unidades" value="{{ ropa.unidades }}" class="form-control">
+
+                <button type="button" class="btn btn-danger btn-sm mt-2 remove-ropa-form">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="addRopaForm" class="btn btn-secondary mt-3 w-auto">Agregar Talla</button>
+    </div>
+    {% endif %}
+
+{% comment %} 
+    {% if unidades_form %}
+    <div id="unidadesFields">
+        {{ unidades_form.as_p }}
+    </div>
+    {% else %}
+        <p>No se encontraron datos para las unidades.</p>
+    {% endif %}
+ {% endcomment %}
+
+
+<div class="col mt-12">
+    <button type="submit" class="btn btn-primary w-auto" id="botonEditarInv">Guardar Cambios</button>
+    <button type="button" class="btn" data-bs-dismiss="modal">Cancelar</button>
+</div>
+</form>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        const ropaContainer = $("#ropaFormsContainer");
+        const totalFormsInput = $("#ropa-TOTAL_FORMS");
+        let formIdx = parseInt(totalFormsInput.val());
+
+        $("#addRopaForm").click(function () {
+            const newForm = `
+                <div class="ropa-form mb-3 p-3">
+                    <label for="form-${formIdx}-nombre_talla">Talla:</label>
+                    <select name="form-${formIdx}-nombre_talla" id="form-${formIdx}-nombre_talla" class="form-control">
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                        <option value="XXXL">XXXL</option>
+                    </select>
+
+                    <label for="form-${formIdx}-unidades">Cantidad:</label>
+                    <input type="number" name="form-${formIdx}-unidades" id="form-${formIdx}-unidades" class="form-control" min="1" value="1">
+
+                    <button type="button" class="btn btn-danger btn-sm mt-2 remove-ropa-form">&times;</button>
+                </div>
+            `;
+            ropaContainer.append(newForm);
+            formIdx++;
+            totalFormsInput.val(formIdx);
+        });
+
+        ropaContainer.on("click", ".remove-ropa-form", function () {
+            $(this).closest(".ropa-form").remove();
+            formIdx--;
+            totalFormsInput.val(formIdx);
+        });
+
+        function setupAutocomplete(inputSelector, hiddenSelector, suggestionsSelector, url) {
+            const $input = $(inputSelector);
+            const $hidden = $(hiddenSelector);
+            const $suggestions = $(suggestionsSelector);
+
+            let currentIndex = -1;
+
+            $input.on("input", function () {
+                const term = $input.val().trim();
+                if (term.length < 2) {
+                    $suggestions.hide();
+                    return;
+                }
+
+                $.ajax({
+                    url: url,
+                    data: { term: term },
+                    dataType: "json",
+                    success: function (data) {
+                        $suggestions.empty().show();
+                        if (data.length === 0) {
+                            $suggestions.hide();
+                            return;
+                        }
+                        data.forEach((item) => {
+                            $suggestions.append(
+                                `<div class="suggestion-item" data-id="${item.id}" data-value="${item.value}">${item.label}</div>`
+                            );
+                        });
+
+                        $(".suggestion-item").on("click", function () {
+                            const value = $(this).data("value");
+                            const id = $(this).data("id");
+
+                            $input.val(value);
+                            $hidden.val(id);
+                            $suggestions.hide();
+                        });
+                    },
+                });
+            });
+
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                    $suggestions.hide();
+                }
+            });
+        }
+
+        setupAutocomplete(
+            "#categoria_nombre",
+            "#categoria_id",
+            "#categoria_suggestions",
+            "{% url 'buscar_categoria' %}"
+        );
+        setupAutocomplete(
+            "#marca_nombre",
+            "#marca_id",
+            "#marca_suggestions",
+            "{% url 'buscar_marca' %}"
+        );
+
+        // Form submission with AJAX
+        $('#mod-prod-form-{{ producto.producto_id }}').submit(function (e) {
+            e.preventDefault();
+            $.ajax({
+                url: "{% url 'mod_prod_modal' producto.producto_id %}",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('#modProdModal{{ producto.producto_id }}').modal('hide');
+                        location.reload();
+                    } else {
+                        $('#modal-body-content-{{ producto.producto_id }}').html(data.html_form);
+                    }
+                }
+            });
+        });
+    });
+</script>

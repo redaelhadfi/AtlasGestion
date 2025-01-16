@@ -1,0 +1,449 @@
+{% extends 'app/base.html' %}
+{% block contenido %}
+{% load custom_filters %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand " href="#">Gestión de Productos</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- Botones -->
+                <li class="nav-item">
+                    <a href="#" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addProdModal">Agregar Producto</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="btn btn-secondary me-2" data-bs-toggle="modal" data-bs-target="#listMarcasModal">Gestionar Marcas</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#listCategoriasModal">Gestionar Categorías</a>
+                </li>
+            </ul>
+
+            <!-- Filtros -->
+            <form class="d-flex align-items-center">
+                <input type="text" name="buscar" id="buscar" class="form-control" value="{{ palabra_clave }}" placeholder="Buscar producto...">
+                <label for="estado" class="me-2">Estado:</label>
+                
+                <select name="estado" id="estado" class="form-select w-auto me-3" onchange="this.form.submit();">
+                    <option value="">Todos</option>
+                    <option value="disponible" {% if estado_filtro == 'disponible' %}selected{% endif %}>Disponible</option>
+                    <option value="sin_stock" {% if estado_filtro == 'sin_stock' %}selected{% endif %}>Sin Stock</option>
+                    <option value="registrado_reciente" {% if estado_filtro == 'registrado_reciente' %}selected{% endif %}>Nuevo</option>
+                </select>
+                
+
+                <label for="categoria" class="me-2">Categoría:</label>
+                <select name="categoria" id="categoria" class="form-select w-auto me-3" onchange="this.form.submit();">
+                    <option value="">Todas</option>
+                    {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}" {% if categoria_filtro == categoria.id %}selected{% endif %}>
+                            {{ categoria.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                {% if request.user.is_superuser %}
+                <label for="negocio" class="me-2">Negocio:</label>
+                <select name="negocio" id="negocio" class="form-select w-auto" onchange="this.form.submit();">
+                    <option value="">Todos</option>
+                    {% for negocio in negocios %}
+                        <option value="{{ negocio.id }}" {% if negocio_filtro == negocio.id %}selected{% endif %}>
+                            {{ negocio.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</nav>
+
+
+
+<div class="container mt-4">
+    <!-- Modal para modificar categoría -->
+    <div class="modal fade" id="modCategoriaModal" tabindex="-1" aria-labelledby="modCategoriaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modCategoriaModalLabel">Modificar Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modCategoriaModalBody">
+                    <!-- Contenido cargado dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para eliminar categoría -->
+    <div class="modal fade" id="eraseCategoriaModal" tabindex="-1" aria-labelledby="eraseCategoriaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eraseCategoriaModalLabel">Eliminar Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="eraseCategoriaModalBody">
+                    <!-- Contenido cargado dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para modificar marca -->
+    <div class="modal fade" id="modMarcaModal" tabindex="-1" aria-labelledby="modMarcaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modMarcaModalLabel">Modificar Marca</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modMarcaModalBody">
+                    <!-- Contenido cargado dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para eliminar marca -->
+    <div class="modal fade" id="eraseMarcaModal" tabindex="-1" aria-labelledby="eraseMarcaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eraseMarcaModalLabel">Eliminar Marca</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="eraseMarcaModalBody">
+                    <!-- Contenido cargado dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Modal para agregar producto -->
+        <div class="modal fade" id="addProdModal" tabindex="-1" aria-labelledby="addProdModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addProdModalLabel">Agregar Producto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Aquí se cargará el formulario mediante AJAX -->
+                        <div id="modal-body-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Listar Marcas -->
+    <div class="modal fade" id="listMarcasModal" tabindex="-1" aria-labelledby="listMarcasModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="listMarcasModalLabel">Gestionar Marcas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabla de marcas -->
+                    {% include 'marca/list_marcas.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Listar Categorías -->
+    <div class="modal fade" id="listCategoriasModal" tabindex="-1" aria-labelledby="listCategoriasModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="listCategoriasModalLabel">Gestionar Categorías</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabla de categorías -->
+                    {% include 'categorias/list_categorias.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Listar Marcas -->
+    <div class="modal fade" id="listMarcasModal" tabindex="-1" aria-labelledby="listMarcasModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="listMarcasModalLabel">Gestionar Marcas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabla de marcas -->
+                    {% for marca in marcas %}
+                    <div class="row mb-2">
+                        <div class="col">{{ marca.nombre }}</div>
+                        <div class="col-auto">
+                            <button class="btn btn-warning btn-sm modificar-marca" data-id="{{ marca.id }}" data-bs-toggle="modal" data-bs-target="#modMarcaModal">Editar</button>
+                            <button class="btn btn-danger btn-sm eliminar-marca" data-id="{{ marca.id }}" data-bs-toggle="modal" data-bs-target="#eraseMarcaModal">Eliminar</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Listar Categorías -->
+    <div class="modal fade" id="listCategoriasModal" tabindex="-1" aria-labelledby="listCategoriasModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="listCategoriasModalLabel">Gestionar Categorías</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabla de categorías -->
+                    {% for categoria in categorias %}
+                    <div class="row mb-2">
+                        <div class="col">{{ categoria.nombre }}</div>
+                        <div class="col-auto">
+                            <button class="btn btn-warning btn-sm modificar-categoria" data-id="{{ categoria.id }}" data-bs-toggle="modal" data-bs-target="#modCategoriaModal">Editar</button>
+                            <button class="btn btn-danger btn-sm eliminar-categoria" data-id="{{ categoria.id }}" data-bs-toggle="modal" data-bs-target="#eraseCategoriaModal">Eliminar</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="table-container listaInventario">
+        <table class=" table">
+            <thead class="table">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Marca</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Precio Mayorista</th>
+                    <th>Descuento</th>
+                    <th>Dcto Mayorista</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                    <tr class="{% if producto.estado == 'sin_stock' or producto.estado == 'ingresado_manual' %}table-danger{% elif producto.estado == 'registrado_reciente' %}table-warning{% else %}table-success{% endif %}">
+                        <td data-label="Nombre">
+                            <strong>
+                                {{ producto.nombre }}
+                            </strong>
+                            {% if producto.ropa.exists %}
+                                <div class="text-muted" style="font-size: 0.8em;">
+                                    {% for ropa in producto.ropa.all %}
+                                        <li class="no-bullets">Talla: {{ ropa.nombre_talla }} ({{ ropa.unidades }} unidades)</li>
+                                    {% endfor %}
+
+                                </div>
+                            {% elif producto.unidades_producto.exists %}
+                                <div class="text-muted" style="font-size: 0.8em;">
+                                    {% for unidad in producto.unidades_producto.all %}
+                                        {{ unidad.unidades }} unidades
+                                    {% endfor %}
+                                </div>
+                                {% elif producto.is_variable %}
+                                <div class="text-muted" style="font-size: 0.8em;">
+                                    Precio Variable
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td data-label="Marca">{{ producto.marca }}</td>
+                        <td data-label="Categoría">{{ producto.categoria }}</td>
+                        <td data-label="Precio">{{ producto.precio|clp }}</td>
+                        <td data-label="P.Mayorista">{{ producto.precio_mayorista|clp }}</td>
+                        <td data-label="Descuento">{{ producto.descuento }}%</td>
+                        <td data-label="D.Mayorista">{{ producto.descuento_mayorista }}%</td>
+                        <td data-label="Stock">
+                            {% if producto.stock > 0 %}
+                                {{ producto.stock }}
+                            {% else %}
+                                <span class="text-danger">Sin Stock</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Estado">
+                            {% if producto.estado == 'disponible' %}
+                                <span class="badge bg-success">Disponible</span>
+                            {% elif producto.estado == 'sin_stock' %}
+                                <span class="badge bg-danger">Sin Stock</span>
+                            {% elif producto.estado == 'registrado_reciente' %}
+                                <span class="badge bg-warning">Nuevo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-primary btn-sm edit-product" data-bs-toggle="modal" data-bs-target="#modProdModal{{ producto.producto_id }}" data-product-id="{{ producto.producto_id }}">Editar</a>
+            
+                            <!-- Modal para editar producto -->
+                            <div class="modal fade modEditProdInvent" id="modProdModal{{ producto.producto_id }}" tabindex="-1" aria-labelledby="modProdModalLabel{{ producto.producto_id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modProdModalLabel{{ producto.producto_id }}">Editar Producto - {{ producto.nombre }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body" id="modal-body-content-{{ producto.producto_id }}">
+                                            <!-- El formulario se cargará aquí mediante AJAX -->
+                                            {% if producto.ropa.exists %}
+                                                <form>
+                                                    {% for ropa in producto.ropa.all %}
+                                                        <div class="form-group">
+                                                            <label for="talla">Talla</label>
+                                                            <input type="text" class="form-control" value="{{ ropa.nombre_talla }}" readonly>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="unidades">Unidades</label>
+                                                            <input type="number" class="form-control" value="{{ ropa.unidades }}">
+                                                        </div>
+                                                    {% endfor %}
+                                                </form>
+                                            {% elif producto.unidades_producto.exists %}
+                                                <form>
+                                                    {% for unidad in producto.unidades_producto.all %}
+                                                        <div class="form-group">
+                                                            <label for="unidades">Unidades</label>
+                                                            <input type="number" class="form-control" value="{{ unidad.unidades }}">
+                                                        </div>
+                                                    {% endfor %}
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+                   
+        </table>
+    </div>
+    {% if not productos %}
+        <div class="alert alert-warning text-center mt-4">No hay productos disponibles.</div>
+    {% endif %}
+</div>
+
+<!-- Incluye jQuery antes de tus scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Script para manejar modales y cargar formularios -->
+<script>
+    $(document).ready(function () {
+        // Cargar contenido para modificar categoría
+        $('.modificar-categoria').on('click', function () {
+            const categoriaId = $(this).data('id');
+            const url = "{% url 'mod_categoria' 0 %}".replace('0', categoriaId);
+            $('#modCategoriaModalBody').load(url);
+        });
+    
+        // Cargar contenido para eliminar categoría
+        $('.eliminar-categoria').on('click', function () {
+            const categoriaId = $(this).data('id');
+            const url = "{% url 'erase_categoria' 0 %}".replace('0', categoriaId);
+            $('#eraseCategoriaModalBody').load(url);
+        });
+    
+        // Cargar contenido para modificar marca
+        $('.modificar-marca').on('click', function () {
+            const marcaId = $(this).data('id');
+            const url = "{% url 'mod_marca' 0 %}".replace('0', marcaId);
+            $('#modMarcaModalBody').load(url);
+        });
+    
+        // Cargar contenido para eliminar marca
+        $('.eliminar-marca').on('click', function () {
+            const marcaId = $(this).data('id');
+            const url = "{% url 'erase_marca' 0 %}".replace('0', marcaId);
+            $('#eraseMarcaModalBody').load(url);
+        });
+    });
+    
+    
+
+    $(document).ready(function () {
+        // Abrir modal para modificar marca
+        $('.modificar-marca').on('click', function () {
+            const marcaId = $(this).data('id');
+            $.get("{% url 'mod_marca' 0 %}".replace('0', marcaId), function (data) {
+                $('#listMarcasModal .modal-body').html(data.html_form);
+            });
+        });
+
+        // Abrir modal para modificar categoría
+        $('.modificar-categoria').on('click', function () {
+            const categoriaId = $(this).data('id');
+            $.get("{% url 'mod_categoria' 0 %}".replace('0', categoriaId), function (data) {
+                $('#listCategoriasModal .modal-body').html(data.html_form);
+            });
+        });
+
+        // Recargar listas después de eliminar o modificar
+        $('.recargar-lista').on('click', function () {
+            const targetUrl = $(this).data('url');
+            $.get(targetUrl, function (data) {
+                $('#listCategoriasModal .modal-body').html(data);
+                $('#listMarcasModal .modal-body').html(data);
+            });
+        });
+    });
+
+    $(document).ready(function () {
+        // Cargar el formulario de Agregar Producto cuando se abra el modal
+        $('#addProdModal').on('show.bs.modal', function () {
+            console.log("Cargando formulario en modal...");
+            $.get("{% url 'add_prod_modal' %}", function (data) {
+                $('#modal-body-content').html(data.html_form);
+                // No es necesario vincular el formulario aquí; se maneja en el template cargado
+            });
+        });
+
+        // Manejar la carga del formulario de edición de producto
+        $('a.edit-product').on('click', function () {
+            let productId = $(this).data('product-id');
+
+            $.get("{% url 'mod_prod_modal' 0 %}".replace('0', productId), function (data) {
+                $('#modal-body-content-' + productId).html(data.html_form);
+                // El manejador de envío se incluye en el template cargado
+            });
+        });
+    });
+</script>
+
+
+<script>$('#add-prod-form').submit(function (e) {
+    e.preventDefault();
+    $.ajax({
+        url: "{% url 'add_prod_modal' %}",
+        type: "POST",
+        data: $(this).serialize(),
+        success: function (data) {
+            if (data.success) {
+                $('#addProdModal').modal('hide');
+                location.reload();
+            } else {
+                // Renderizar errores en el formulario
+                $('#modal-body-content').html(data.html_form);
+            }
+        },
+        error: function () {
+            alert('Hubo un error al procesar la solicitud.');
+        }
+    });
+});
+</script>
+{% endblock %}

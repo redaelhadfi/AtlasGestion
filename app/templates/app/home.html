@@ -1,0 +1,239 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block contenido %}
+<link rel="stylesheet" href="{% static 'app/css/home.css' %}">
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Columna de Información Personal -->
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h4 class="card-title">{{ staff.username }}</h4>
+                    <p>Correo: {{ staff.email }}</p>
+                    <p>Nombre completo: {{ staff.first_name }} {{ staff.last_name }}</p>
+                    <a href="{% url 'change_password' %}" class="btn btn-secondary mt-3">Cambiar Contraseña</a>
+                </div>
+            </div>
+        </div>
+
+    <!-- Columna de Tarjetas del Dashboard -->
+    <div class="col-md-9">
+        <div class="row">
+            <!-- Fila superior: 4 tarjetas -->
+            <div class="col-md-3">
+                <div class="card tdv text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ total_ventas|clp }}</h1>
+                        <h6>TOTAL DE VENTAS</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card pdv text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ venta_diaria|clp }}</h1>
+                        <h6>VENTAS DEL DÍA ACTUAL</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card mdv text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ margen_ventas|clp }}</h1>
+                        <h6>MARGEN DE VENTAS</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card pdm text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ porcentaje_margen|floatformat:2 }}%</h1>
+                        <h6>PORCENTAJE DEL MARGEN</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <!-- Fila inferior: 2 tarjetas -->
+            <div class="col-md-6">
+                <div class="card pmv text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ producto_mas_vendido.producto__nombre }}</h1>
+                        <h6>PRODUCTO MAS VENDIDO</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card iva text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h1>{{ producto_menos_vendido.producto__nombre }}</h1>
+                        <h6>PRODUCTO MENOS VENDIDO</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Botones de Exportación -->
+    <div class="export-buttons mt-4">
+        <a href="{% url 'generar_reporte_pdf' %}" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> Descargar PDF
+        </a>
+        <a href="{% url 'exportar_reportes_excel' %}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Descargar Excel
+        </a>
+    </div>
+</div>
+
+    <!-- Sección de Gráficos -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card grafico">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Ventas del Mes</h5>
+                    <canvas id="comprasChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card grafico">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Ventas Acumuladas del Año</h5>
+                    <canvas id="comprasDiariasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ventas Totales -->
+    <div class="card mt-4 h-200">
+        <div class="card-body">
+            <h5 class="card-title">Ventas Realizadas</h5>
+            <div class="table-container">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Productos Comprados</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in compras %}
+                        <tr>
+                            <td>{{ compra.fecha }}</td>
+                            <td>${{ compra.total }}</td>
+                            <td>
+                                <ul>
+                                    {% for detalle in compra.detalles.all %}
+                                    <li>{{ detalle.producto.nombre }} ({{ detalle.cantidad }} x {{ detalle.precio_unitario }})</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <a href="#" class="btn btn-warning btn-sm">Anular</a>
+                                <a href="{% url 'detalle_compra' compra.id %}" class="btn btn-info btn-sm">Detalles</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginación -->
+            <div class="pagination">
+                {% if compras.has_previous %}
+                    <a href="?page=1">Primera</a>
+                    <a href="?page={{ compras.previous_page_number }}">Anterior</a>
+                {% endif %}
+                <span>Página {{ compras.number }} de {{ compras.paginator.num_pages }}</span>
+                {% if compras.has_next %}
+                    <a href="?page={{ compras.next_page_number }}">Siguiente</a>
+                    <a href="?page={{ compras.paginator.num_pages }}">Última</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Gráfico Ventas del Mes
+    fetch("{% url 'compras_por_mes' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('comprasChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Compras con Boleta',
+                            data: data.data_boleta,
+                            backgroundColor: '#5dc7c9', // Turquesa
+                            borderColor: '#5dc7c9', // Turquesa para la leyenda
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Compras con Factura',
+                            data: data.data_factura,
+                            backgroundColor: '#77dd77', // Verde claro
+                            borderColor: '#77dd77', // Verde claro para la leyenda
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#000', // Color negro para los textos de la leyenda
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Gráfico Ventas Diarias
+    fetch("{% url 'compras_diarias' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctxDiarias = document.getElementById('comprasDiariasChart').getContext('2d');
+            new Chart(ctxDiarias, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Compras con Boleta',
+                            data: data.data_boleta,
+                            borderColor: '#5dc7c9', // Turquesa
+                            backgroundColor: 'rgba(93, 199, 201, 0.2)', // Turquesa suave
+                            borderWidth: 2,
+                        },
+                        {
+                            label: 'Compras con Factura',
+                            data: data.data_factura,
+                            borderColor: '#77dd77', // Verde claro
+                            backgroundColor: 'rgba(119, 221, 119, 0.2)', // Verde suave
+                            borderWidth: 2,
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#000', // Color negro para los textos de la leyenda
+                            }
+                        }
+                    }
+                }
+            });
+        });
+</script>
+{% endblock %}

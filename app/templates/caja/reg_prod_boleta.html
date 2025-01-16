@@ -1,0 +1,30 @@
+<form method="post" id="reg-prod-boleta-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    
+    {{ variable_form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Registrar Producto</button>
+</form>
+
+<script>
+    $('#reg-prod-boleta-form').submit(function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: "{% url 'reg_prod_boleta' %}",
+            type: "POST",
+            data: $(this).serialize(),
+            success: function (data) {
+                if (data.success) {
+                    alert("Producto variable registrado y agregado al carrito.");
+                    location.reload();
+                } else {
+                    alert(data.message || "Hubo un problema al registrar el producto.");
+                }
+            },
+            error: function () {
+                alert("Error al intentar registrar el producto variable.");
+            }
+        });
+    });
+</script>

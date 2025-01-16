@@ -1,0 +1,67 @@
+{% extends 'app/base.html' %}
+
+{% block contenido %}
+<div class="tituloh1">
+<h1>Gestión de Negocios</h1>
+</div>
+<!-- formulario de agregar negocio -->
+{% include 'administration/negocio/add_negocio.html' %}
+
+<!-- Lista de negocios -->
+<h2>Negocios Registrados</h2>
+<div class="table-container regNegocio">
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>RUT Empresa</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th>Dirección del Almacén</th>
+            <th>Estado</th>
+            <th>Mayorista</th> 
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for negocio in negocios %}
+        <tr>
+            <td data-label="ID">{{ negocio.id }}</td>
+            <td data-label="Nombre">{{ negocio.nombre }}</td>
+            <td data-label="RUT Empresa">{{ negocio.rut_empresa }}</td>
+            <td data-label="Dirección">{{ negocio.direccion }}</td>
+            <td data-label="Teléfono">{{ negocio.telefono }}</td>
+            <td data-label="Almacen">{{ negocio.almacen_set.first.direccion }}</td>
+            <td data-label="Estado">
+                {% if negocio.is_active %}
+                    Activo
+                {% else %}
+                    Inactivo
+                {% endif %}
+            </td>
+            <td data-label="Mayorista">
+                {% if negocio.is_mayorista %}
+                    Sí
+                {% else %}
+                    No
+                {% endif %}
+            </td>
+            <td data-label="Acciones">
+                <a href="{% url 'mod_negocio' negocio.id %}" class="btn btn-warning">Modificar</a>
+                <a href="{% url 'erase_negocio' negocio.id %}" class="btn btn-danger">Eliminar</a>
+                {% if negocio.is_active %}
+                    <a href="{% url 'cambiar_estado_negocio' negocio.id %}" class="btn btn-secondary">Inactivar</a>
+                {% else %}
+                    <a href="{% url 'cambiar_estado_negocio' negocio.id %}" class="btn btn-success">Activar</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    
+    </tbody>    
+
+
+</div>   
+
+{% endblock %}

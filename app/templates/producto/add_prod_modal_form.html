@@ -1,0 +1,295 @@
+{%load static%}
+<form method="post" id="add-prod-form">
+<div class="col-auto">
+    {% csrf_token %}
+    {{ producto_form.as_p }}
+</div>
+    
+    <div class="mb-3">
+        <label for="categoria_nombre">Categoría</label>
+        <input type="text" id="categoria_nombre" name="categoria_nombre" class="form-control" placeholder="Escribe para buscar o crear">
+        <input type="hidden" id="categoria_id" name="categoria_id">
+    
+        <!-- Contenedor para mostrar sugerencias -->
+        <div id="categoria_suggestions" class="suggestions-box"></div>
+    </div>
+    <div class="mb-3 marcaMod">
+        <label for="marca_nombre">Marca</label>
+        <input type="text" id="marca_nombre" name="marca_nombre" class="form-control" placeholder="Escribe para buscar o crear">
+        <input type="hidden" id="marca_id" name="marca_id">
+    
+        <!-- Contenedor para mostrar sugerencias -->
+        <div id="marca_suggestions" class="suggestions-box"></div>
+    </div>
+
+    <!-- Checkboxes para seleccionar sub-formularios -->
+    <div class="checkboxes">
+        <div class="tituloCheckBox">
+        <label>Seleccione el tipo de producto:</label><br>
+        </div>
+        <input type="checkbox" id="ropaCheckbox" name="ropaCheckbox">
+        <label for="ropaCheckbox">Ropa</label><br>
+{% comment %}         <input type="checkbox" id="unidadesCheckbox" name="unidadesCheckbox">
+        <label for="unidadesCheckbox">Unidades</label><br> {% endcomment %}
+        <input type="checkbox" id="variableCheckbox" name="variableCheckbox">
+        <label for="variableCheckbox">Variable</label>
+    </div>
+
+    <div id="ropaFields" class="table-container">
+        <input type="hidden" id="ropa-TOTAL_FORMS" name="ropa-TOTAL_FORMS" value="0">
+        <div class="tituloRopa">
+            <label>Desglose de unidades:</label>
+        </div>
+            <div id="ropaFormsContainer">
+                <!-- Aquí se agregarán los formularios dinámicamente -->
+            </div>
+        <button type="button" id="addRopaForm" class="btn btn-secondary mt-3">Agregar Talla</button>
+    </div>
+    
+{% comment %}     <div id="unidadesFields">
+        <div class="mb-3">
+            <!-- MOSTRAR FORMULARIO DE UNIDADES -->
+            {{ unidades_form.as_p }}
+        </div>
+    </div>
+
+    <div id="variableFields">
+        <div class="mb-3">
+            <!-- MOSTRAR FORMULARIO DE VARIABLE -->
+            {{ variable_form.as_p }}
+        </div>
+    </div> {% endcomment %}
+
+    <button type="submit" class="btn btn-primary" id="GuardarModInv">Guardar</button>
+</form>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+<script>
+    $('#ropaCheckbox').change(function () {
+        $('#ropaFields').toggle(this.checked);
+        $('#ropaFields input, #ropaFields select').prop('disabled', !this.checked);
+    });
+    
+    $('#unidadesCheckbox').change(function () {
+        $('#unidadesFields').toggle(this.checked);
+        $('#unidadesFields input, #unidadesFields select').prop('disabled', !this.checked);
+    });
+    
+    $('#variableCheckbox').change(function () {
+        // Mostrar u ocultar el contenedor de campos relacionados con el checkbox
+        $('#variableFields').toggle(this.checked);
+        $('#variableFields input, #variableFields select').prop('disabled', !this.checked);
+    
+        // Si el checkbox está marcado, establecer los precios en 0 y mostrar el mensaje
+        {% comment %} if (this.checked) {
+            $('#id_precio').val(0).prop('disabled', true);
+            $('#id_precio_mayorista').val(0).prop('disabled', true);
+            $('#variableMessage').fadeIn(); // Mostrar mensaje
+        } else {
+            // Rehabilitar los campos al desmarcar el checkbox y ocultar el mensaje
+            $('#id_precio').prop('disabled', false);
+            $('#id_precio_mayorista').prop('disabled', false);
+            $('#variableMessage').fadeOut(); // Ocultar mensaje
+        } {% endcomment %}
+    });
+      
+</script>
+
+<script>
+    $(document).ready(function () {
+        const ropaContainer = $("#ropaFormsContainer");
+        const totalFormsInput = $("#ropa-TOTAL_FORMS");
+        let formIdx = parseInt(totalFormsInput.val());
+    
+        $("#addRopaForm").click(function () {
+            const newForm = `
+                <div class="ropa-form mb-3 p-3">
+                    <label for="form-${formIdx}-nombre_talla">Talla:</label>
+                    <select name="form-${formIdx}-nombre_talla" id="form-${formIdx}-nombre_talla" class="form-control">
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                        <option value="XXXL">XXXL</option>
+                    </select>
+    
+                    <label for="form-${formIdx}-unidades">Cantidad:</label>
+                    <input type="number" name="form-${formIdx}-unidades" id="form-${formIdx}-unidades" class="form-control" min="1" value="1">
+    
+                    <button type="button" class="btn btn-danger btn-sm mt-2 remove-ropa-form">&times; </button>
+                </div>
+            `;
+            ropaContainer.append(newForm);
+            formIdx++;
+            totalFormsInput.val(formIdx); // Actualizar el contador total
+        });
+    
+        ropaContainer.on("click", ".remove-ropa-form", function () {
+            $(this).closest(".ropa-form").remove();
+            formIdx--;
+            totalFormsInput.val(formIdx);
+        });
+    });
+    
+</script>
+
+<script>
+    $(document).ready(function () {
+        function setupAutocomplete(inputSelector, hiddenSelector, suggestionsSelector, url) {
+            const $input = $(inputSelector);
+            const $hidden = $(hiddenSelector);
+            const $suggestions = $(suggestionsSelector);
+    
+            let currentIndex = -1;
+    
+            $input.on("input", function () {
+                const term = $input.val().trim();
+                if (term.length < 2) {
+                    $suggestions.hide();
+                    return;
+                }
+    
+                $.ajax({
+                    url: url,
+                    data: { term: term },
+                    dataType: "json",
+                    success: function (data) {
+                        $suggestions.empty().show();
+                        if (data.length === 0) {
+                            $suggestions.hide();
+                            return;
+                        }
+                        data.forEach((item, index) => {
+                            $suggestions.append(
+                                `<div class="suggestion-item" data-id="${item.id}" data-value="${item.value}" tabindex="-1">${item.label}</div>`
+                            );
+                        });
+                        currentIndex = -1;
+    
+                        $(".suggestion-item").on("click", function () {
+                            const value = $(this).data("value");
+                            const id = $(this).data("id");
+    
+                            $input.val(value);
+                            $hidden.val(id);
+                            $suggestions.hide();
+                        });
+                    },
+                });
+            });
+    
+            $input.on("keydown", function (e) {
+                const items = $suggestions.find(".suggestion-item");
+    
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (currentIndex < items.length - 1) {
+                        currentIndex++;
+                        items.removeClass("active");
+                        $(items[currentIndex]).addClass("active");
+                        $input.val($(items[currentIndex]).data("value"));
+                    }
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        items.removeClass("active");
+                        $(items[currentIndex]).addClass("active");
+                        $input.val($(items[currentIndex]).data("value"));
+                    }
+                } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (currentIndex >= 0) {
+                        const selectedItem = $(items[currentIndex]);
+                        const value = selectedItem.data("value");
+                        const id = selectedItem.data("id");
+    
+                        $input.val(value);
+                        $hidden.val(id);
+                        $suggestions.hide();
+                    }
+                }
+            });
+    
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                    $suggestions.hide();
+                }
+            });
+        }
+    
+        setupAutocomplete(
+            "#categoria_nombre",
+            "#categoria_id",
+            "#categoria_suggestions",
+            "{% url 'buscar_categoria' %}"
+        );
+        setupAutocomplete(
+            "#marca_nombre",
+            "#marca_id",
+            "#marca_suggestions",
+            "{% url 'buscar_marca' %}"
+        );
+    });
+    
+</script>
+
+
+
+<script>
+    // Procesar el envío del formulario de agregar producto mediante AJAX
+    $('#add-prod-form').submit(function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: "{% url 'add_prod_modal' %}",
+            type: "POST",
+            data: $(this).serialize(),
+            success: function (data) {
+                if (data.success) {
+                    $('#addProdModal').modal('hide');
+                    location.reload();
+                } else {
+                    $('#modal-body-content').html(data.html_form);  
+                }
+            }
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        $('#ropaCheckbox').change(function () {
+            // Mostrar u ocultar el contenedor de Ropa 
+            // según el estado del checkbox
+            $('#ropaFields').toggle(this.checked);
+            
+            // Habilitar/deshabilitar los campos dentro de ropaFields
+            $('#ropaFields input, #ropaFields select')
+                .prop('disabled', !this.checked);
+
+            // Si se acaba de marcar el checkbox, 
+            // disparamos el evento "click" del botón
+            if (this.checked) {
+                $('#addRopaForm').click();
+            }
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        $('input[type="checkbox"]').change(function() {
+            if (this.checked) {
+                // Deshabilitamos y desmarcamos el resto de checkboxes
+                $('input[type="checkbox"]').not(this)
+                    .prop('disabled', true)
+                    .prop('checked', false);
+            } else {
+                // Al desmarcar el único activo, se reactivan todos
+                $('input[type="checkbox"]').prop('disabled', false);
+            }
+        });
+    });
+</script>

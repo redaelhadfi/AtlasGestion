@@ -1,0 +1,574 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block contenido %}
+{% load custom_filters %}
+
+
+<h2 class="my-4 text-center">Boleta de Compra</h2>
+
+<!-- Filtros -->
+<div class="container-fluid mb-3 p-2 bg-white border rounded shadow-sm">
+    <form method="get" class="row align-items-center">
+        <!-- Buscar producto -->
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <input type="text" name="buscar" id="buscar" class="form-control form-control-sm" 
+                value="{{ palabra_clave }}" placeholder="Buscar producto...">
+        </div>
+
+        <!-- Categoría -->
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <select name="categoria" id="categoria" class="form-select form-select-sm">
+                <option value="">Categoría</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if categoria_filtro == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Negocio (solo para superusuario) -->
+        {% if request.user.is_superuser %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+            <select name="negocio" id="negocio" class="form-select form-select-sm">
+                <option value="">Negocio</option>
+                {% for negocio in negocios %}
+                    <option value="{{ negocio.id }}" {% if negocio_filtro == negocio.id %}selected{% endif %}>{{ negocio.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- Botones -->
+        <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-end gap-2 mb-2">
+            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#registrarProductoModal">Ingreso Manual</button>
+        </div>
+    </form>
+</div>
+
+<!-- Contenido principal -->
+<div class="container-fluid">
+    <div class="row">
+        <!-- Tabla de Productos -->
+        <div class="col-md-7">
+            <h4 class="mb-3 text-center">Productos Disponibles</h4>
+            <table class="table table-striped table-bordered">
+                <thead class="table-ligth text-center">
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 10%;">Stock</th>
+                        <th style="width: 10%;">Precio</th>
+                        <th style="width: 10%;">Desc.</th>
+                        <th style="width: 1%;">Acciones</th> <!--Ajustar en CSS-->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    {% if producto.stock > 0 or producto.is_variable %}
+                    <tr>
+                        <td class="fs-5"><strong>{{ producto.nombre }}</strong>
+                            {% if producto.ropa.exists %}
+                            <div class="text-muted" style="font-size: 0.8em;">
+                                {% for ropa in producto.ropa.all %}
+                                    <li class="no-bullets">Talla: {{ ropa.nombre_talla }} ({{ ropa.unidades }} unidades)</li>
+                                {% endfor %}
+                            </div>
+                            {% elif producto.is_variable %}
+                            <div class="text-muted" style="font-size: 0.8em;">
+                                Precio Manual
+                            </div>
+                        {% endif %}</td>
+                        <td class="text-center">{{ producto.stock }}</td>
+                        <td class="text-center">{{ producto.precio|clp }}</td>
+                        <td class="text-center">{{ producto.descuento }}%</td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                {% if producto.ropa.exists %}
+                                    <!-- Si es ropa, abrir modal -->
+                                    <button type="button" 
+                                    class="btn btn-secondary w-auto btn-ropa-product"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalProductoRopa" 
+                                    data-producto-id="{{ producto.producto_id }}">
+                                    +
+                                    </button>
+                                {% elif producto.is_variable %}
+                                    <!-- Si es variable, abrir modal -->
+                                    <button type="button" 
+                                    class="btn btn-secondary w-auto btn-variable-product"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalProductoVariable" 
+                                    data-producto-id="{{ producto.producto_id }}">
+                                    +
+                                    </button>
+                                {% else %}
+                                    <!-- Si no es variable, agregar directamente -->
+                                    <form method="post" action="{% url 'agregar_al_carrito_boleta' producto.producto_id %}">
+                                        {% csrf_token %}
+                                            <button type="submit" class="btn btn-success w-auto btnAñadir" style="">+</button>
+                                        </form>
+                                        {% endif %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#precioDescuentoModal{{ producto.producto_id }}">Desc</button>
+                            </div>
+                        </td> 
+                    <!-- Modal con el contenedor para el formulario cargado dinámicamente -->
+                    <div class="modal fade" id="modalProductoVariable" tabindex="-1" aria-labelledby="modalProductoVariableLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalProductoVariableLabel">Precio de Venta</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body" id="modal-body-variable-content">
+                                    <!-- Aquí se cargará el formulario dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Modal con el contenedor para el formulario cargado dinámicamente -->
+                    <div class="modal fade" id="modalProductoRopa" tabindex="-1" aria-labelledby="modalProductoRopaLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalProductoRopaLabel">Unidades a la Venta</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body" id="modal-body-ropa-content">
+                                    <!-- Aquí se cargará el formulario dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                                            
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Resumen del Carrito -->
+        <div class="col-md-5">
+            <h4 class="mb-3 text-center">Carrito de Compras</h4>
+            {% if carrito_items %}
+            <ul class="list-group shadow-sm">
+                {% for item in carrito_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ item.cantidad }}x {{ item.producto.nombre }}</strong><br>
+                        {% if item.producto.is_variable %}
+                            <small>P. Unitario: {{ item.precio_unitario|clp }} | Total: {{ item.cantidad|multiply:item.precio_unitario|clp }}</small>
+                        {% else %}
+                            <small>P. Unitario: {{ item.precio_unitario|clp }} | Total: {{ item.total_precio|clp }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex gap-1">
+                        <form method="post" action="{% url 'restar_producto_boleta' item.producto.producto_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">-</button>
+                        </form>
+                        <form method="post" action="{% url 'agregar_al_carrito_boleta' item.producto.producto_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success">+</button>
+                        </form>
+                        <form method="post" action="{% url 'eliminar_del_carrito_boleta' item.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">x</button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="bg-light rounded shadow-sm" style="font-size: 0.8em;">
+                <p><strong>Subtotal:</strong> {{ carrito_subtotal|clp }}</p>
+                <p><strong>Descuento:</strong> -{{ carrito_descuento_total|clp }}</p>
+                <p><strong>IVA:</strong> {{ carrito_iva|clp }}</p>
+                <p class="text-end fs-5"><strong>Total:</strong> {{ carrito_total|clp }}</p>
+            </div>
+            <form method="POST" action="{% url 'confirmar_compra_boleta' %}" class="mt-3">
+                {% csrf_token %}
+                <div>
+                    <select class="form-select" id="medio_pago" name="medio_pago" required>
+                        <option value="" disabled selected>Seleccione un medio de pago</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta_debito">Tarjeta Débito</option>
+                        <option value="tarjeta_credito">Tarjeta Crédito</option>
+                    </select>
+                </div>
+                <div class="py-3" style="position: relative;">
+                    <input type="email" id="correo" name="correo" class="form-control" placeholder="Escriba el correo electrónico">
+                    <input type="hidden" id="correo_id" name="correo_id">
+                    <div id="correo_suggestions" class="suggestions-box"></div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Finalizar Compra</button>
+            </form>
+            <form method="post" action="{% url 'vaciar_carrito_boleta' %}" class="mt-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger w-100">Cancelar</button>
+            </form>
+            {% else %}
+            <p class="text-center text-muted">Tu carrito está vacío.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+    <!-- Modales -->
+    {% for producto in productos %}
+    <div class="modal fade" id="precioDescuentoModal{{ producto.producto_id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'actualizar_descuento_boleta' producto.producto_id %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title">Asignar Descuento a {{ producto.nombre }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="number" name="descuento" class="form-control" value="{{ producto.descuento }}" min="0" max="100">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <!-- Modal para ingreso manual -->
+    <div class="modal fade" id="registrarProductoModal" tabindex="-1" aria-labelledby="registrarProductoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registrarProductoLabel">Registrar Producto para Boleta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modal-body-content">
+                    <!-- El contenido dinámico del formulario se cargará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                
+<script>
+    $(document).ready(function () {
+        function setupAutocomplete(inputSelector, hiddenSelector, suggestionsSelector, url) {
+            const $input = $(inputSelector);
+            const $hidden = $(hiddenSelector);
+            const $suggestions = $(suggestionsSelector);
+
+            $input.on("input", function () {
+                const term = $input.val().trim();
+                if (term.length < 2) {
+                    $suggestions.hide();
+                    return;
+                }
+
+                $.ajax({
+                    url: url,
+                    data: { term: term },
+                    dataType: "json",
+                    success: function (data) {
+                        $suggestions.empty().show();
+                        if (data.length === 0) {
+                            $suggestions.hide();
+                            return;
+                        }
+                        data.forEach((item) => {
+                            $suggestions.append(
+                                `<div class="suggestion-item" data-id="${item.id}" data-value="${item.value}">${item.label}</div>`
+                            );
+                        });
+
+                        $(".suggestion-item").on("click", function () {
+                            const value = $(this).data("value");
+                            const id = $(this).data("id");
+
+                            $input.val(value);
+                            $hidden.val(id);
+                            $suggestions.hide();
+                        });
+                    },
+                });
+            });
+
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                    $suggestions.hide();
+                }
+            });
+        }
+
+        setupAutocomplete(
+            "#correo", // Input del correo
+            "#correo_id", // Campo oculto para ID del correo
+            "#correo_suggestions", // Contenedor de sugerencias
+            "/buscar_correo/" // URL de búsqueda
+        );
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const medioPagoSelect = document.getElementById('medio_pago');
+        const pagarBtn = document.getElementById('pagar-btn');
+        const mensajeError = document.getElementById('mensaje-medio-pago');
+    
+        if (pagarBtn) {
+            pagarBtn.addEventListener('click', function (event) {
+                if (!medioPagoSelect.value) {
+                    event.preventDefault();
+                    mensajeError.style.display = 'block';
+                }
+            });
+        }
+    
+        // Excluir validaciones para el botón "Cancelar Venta"
+        const cancelarVentaForm = document.querySelector('form[action="{% url "vaciar_carrito_boleta" %}"]');
+        if (cancelarVentaForm) {
+            cancelarVentaForm.addEventListener('submit', function () {
+                mensajeError.style.display = 'none';
+            });
+        }
+    });
+    
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const productosConBajoStock = [{% for producto in productos %}{% if producto.stock < 5 %}{{ producto.producto_id }}, {% endif %}{% endfor %}];
+        
+        if (productosConBajoStock.length > 0) {
+            document.getElementById('alerta-bajo-stock').style.display = 'block';
+        }
+    });
+</script>
+
+<script>
+    document.getElementById("submit-yes").addEventListener("click", function (event) {
+        const emailInput = document.getElementById("correo");
+        const emailError = document.getElementById("email-error");
+
+        if (!emailInput.value) {
+            event.preventDefault();
+            emailError.classList.remove("d-none");
+        } else {
+            emailError.classList.add("d-none");
+        }
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        function setupAutocomplete(inputSelector, hiddenSelector, suggestionsSelector, url) {
+            const $input = $(inputSelector);
+            const $hidden = $(hiddenSelector);
+            const $suggestions = $(suggestionsSelector);
+    
+            $input.on("input", function () {
+                const term = $input.val().trim();
+                if (term.length < 2) {
+                    $suggestions.hide();
+                    return;
+                }
+    
+                $.ajax({
+                    url: url,
+                    data: { term: term },
+                    dataType: "json",
+                    success: function (data) {
+                        $suggestions.empty().show();
+                        if (data.length === 0) {
+                            $suggestions.hide();
+                            return;
+                        }
+                        data.forEach((item) => {
+                            $suggestions.append(
+                                `<div class="suggestion-item" data-id="${item.id}" data-value="${item.value}">${item.label}</div>`
+                            );
+                        });
+    
+                        $(".suggestion-item").on("click", function () {
+                            const value = $(this).data("value");
+                            const id = $(this).data("id");
+    
+                            $input.val(value);
+                            $hidden.val(id);
+                            $suggestions.hide();
+                        });
+                    },
+                });
+            });
+    
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest($suggestions).length && !$(e.target).is($input)) {
+                    $suggestions.hide();
+                }
+            });
+        }
+    
+        // Configurar autocompletado para Marca
+        setupAutocomplete(
+            "#marca_nombre",
+            "#marca_id",
+            "#marca_suggestions",
+            "{% url 'buscar_marca' %}" // Ajustar al endpoint correspondiente
+        );
+    
+        // Configurar autocompletado para Categoría
+        setupAutocomplete(
+            "#categoria_nombre",
+            "#categoria_id",
+            "#categoria_suggestions",
+            "{% url 'buscar_categoria' %}" // Ajustar al endpoint correspondiente
+        );
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Cargar el formulario dinámicamente al abrir el modal
+        $('#registrarProductoModal').on('show.bs.modal', function () {
+            console.log("Cargando formulario de registro de producto en modal...");
+            $.get("{% url 'reg_prod_boleta' %}", function (data) {
+                $('#modal-body-content').html(data);
+            });
+        });
+    });    
+</script>
+
+
+<script>
+    $(document).ready(function () {
+        $('.btn-variable-product').click(function () {
+            var productoId = $(this).data('producto-id');
+            console.log("Producto ID (desde botón): ", productoId);
+    
+            var url = "/carrito/boleta/agregar/precio/" + productoId + "/";
+    
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function (data) {
+                    $('#modal-body-variable-content').html(data.html_form);
+                    $('#modal-body-variable-content').append('<input type="hidden" name="producto_id" value="' + productoId + '">');
+                },
+                error: function () {
+                    alert("Error al cargar el formulario del producto variable.");
+                }
+            });
+        });
+    
+        $('#reg-prod-var-form').submit(function (e) {
+            e.preventDefault();
+            var productoId = $(this).find('input[name="producto_id"]').val();
+            var nuevoPrecio = $(this).find('input[name="precio"]').val();
+            console.log("Enviando producto ID: ", productoId);
+            console.log("Nuevo precio: ", nuevoPrecio);
+    
+            var url = "/carrito/boleta/agregar/precio/" + productoId + "/";
+    
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert("Producto variable agregado correctamente con el nuevo precio.");
+                        location.reload();
+                    } else {
+                        $('#error-container').removeClass('d-none').text(data.errors.precio_form_errors || "Error al agregar.");
+                    }
+                },
+                error: function () {
+                    $('#error-container').removeClass('d-none').text("Error al intentar agregar el producto.");
+                }
+            });
+        });
+    });
+    
+</script>
+
+<script>
+    $(document).ready(function () {
+        $('.btn-ropa-product').click(function () {
+            const productoId = $(this).data('producto-id'); // Obtener el ID del producto
+            const url = `/carrito/boleta/agregar/ropa/${productoId}/`; // Construir la URL
+    
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    $('#modal-body-ropa-content').html(data.html_form); // Cargar el formulario dinámico
+                },
+                error: function () {
+                    alert('Error al cargar el formulario de tallas.');
+                }
+            });
+        });
+    
+        // Enviar el formulario dinámico al backend
+        $('#modal-body-ropa-content').on('submit', '#ropa-form', function (e) {
+            e.preventDefault();
+    
+            const form = $(this);
+            const url = `/carrito/boleta/agregar/ropa/` + $('#producto_id_input').val(); // Construir la URL
+    
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: form.serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert(data.message); // Mostrar mensaje de éxito
+                        location.reload(); // Recargar la página
+                    } else {
+                        $('#error-container').removeClass('d-none').text(data.error || 'Error al procesar el formulario.');
+                    }
+                },
+                error: function () {
+                    $('#error-container').removeClass('d-none').text('Error inesperado.');
+                }
+            });
+        });
+    });
+ 
+</script>
+
+
+<script>
+        $('#reg-prod-var-form').submit(function (e) {
+            e.preventDefault();
+            var productoId = $(this).find('input[name="producto_id"]').val();
+            var nuevoPrecio = $(this).find('input[name="precio"]').val();
+            console.log("Enviando producto ID: ", productoId);
+            console.log("Nuevo precio: ", nuevoPrecio);
+    
+            var url = "/carrito/boleta/agregar/precio/" + productoId + "/";
+    
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: $(this).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        alert("Producto variable agregado correctamente con el nuevo precio.");
+                        location.reload();
+                    } else {
+                        $('#error-container').removeClass('d-none').text(data.errors.precio_form_errors || "Error al agregar.");
+                    }
+                },
+                error: function () {
+                    $('#error-container').removeClass('d-none').text("Error al intentar agregar el producto.");
+                }
+            });
+        });
+    });
+    
+</script>
+
+{% endblock %}

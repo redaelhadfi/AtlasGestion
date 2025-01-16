@@ -1,0 +1,30 @@
+{% block contenido %}
+<!-- formulario de agregar marca -->
+{% include 'marca/add_marca.html' %}
+
+<!-- Lista de marcas -->
+<h2>Marcas Registradas</h2>
+<div class="table-container">
+<table class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for marca in marcas %}
+        <tr>
+            <td data-label="Nombre">{{ marca.nombre }}</td>
+            <td data-label="Acciones">
+                <a href="{% url 'mod_marca' marca.id %}" class="btn btn-warning">Modificar</a>
+                <a href="{% url 'erase_marca' marca.id %}" class="btn btn-danger">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}
+
+

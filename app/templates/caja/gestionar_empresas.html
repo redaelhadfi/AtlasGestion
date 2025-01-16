@@ -1,0 +1,62 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block contenido %}
+<h2 class="my-4 text-center text-primary">Gestión de Empresas</h2>
+
+<div class="container">
+    <!-- Formulario para agregar empresa -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Agregar Nueva Empresa</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{% url 'gestionar_empresas' %}">
+                {% csrf_token %}
+                <div class="row g-3">
+                    {% for field in empresa_form %}
+                    <div class="col-md-6">
+                        <label for="{{ field.id_for_label }}" class="form-label"><strong>{{ field.label }}</strong></label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="text-danger">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary px-4">Guardar Empresa</button>
+                    <a href="{% url 'factura' %}" class="btn btn-outline-secondary px-4">Volver a Factura</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Listado de Empresas -->
+    <div class="card shadow mt-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Empresas Registradas</h5>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for empresa in empresas %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ empresa.nombre }}</strong><br>
+                    <small>{{ empresa.correo }}</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-warning btn-sm">Editar</a>
+                    <form method="POST" action="{% url 'eliminar_empresa' empresa.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Está seguro de eliminar esta empresa?')">
+                            Eliminar
+                        </button>
+                    </form>
+                </div>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-center">No hay empresas registradas.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

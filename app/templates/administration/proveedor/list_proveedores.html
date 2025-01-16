@@ -1,0 +1,52 @@
+{% extends 'app/base.html' %}
+
+{% block contenido %}
+
+<div class="tituloProv">
+<h1>Gestión de Proveedores</h1>
+</div>
+{% if request.user.is_superuser %}
+<form method="get" class="mb-3">
+    <label for="negocio" class="me-2">Filtrar por negocio:</label>
+    <select name="negocio" id="negocio" class="form-select w-auto" onchange="this.form.submit();">
+        <option value="">Todos los negocios</option>
+        {% for negocio in negocios %}
+            <option value="{{ negocio.id }}" {% if negocio_filtro == negocio.id %}selected{% endif %}>
+                {{ negocio.nombre }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+{% endif %}
+
+
+<!-- Extender el formulario de agregar proveedor -->
+{% include 'administration/proveedor/add_proveedor.html' %}
+
+<!-- Lista de proveedores -->
+<h2>Proveedores Registrados</h2>
+<div class="table-container">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>RUT Empresa</th>
+            <th>Teléfono</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for proveedor in proveedores %}
+        <tr>
+            <td data-label="Nombre">{{ proveedor.nombre }}</td>
+            <td data-label="RUT">{{ proveedor.rut_empresa }}</td>
+            <td data-label="Teléfono">{{ proveedor.telefono }}</td>
+            <td data-label="Acciones">
+                <a href="{% url 'mod_proveedor' proveedor.id %}" class="btn btn-warning">Modificar</a>
+                <a href="{% url 'erase_proveedor' proveedor.id %}" class="btn btn-danger">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+{% endblock %}

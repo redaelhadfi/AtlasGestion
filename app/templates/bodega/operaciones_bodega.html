@@ -1,0 +1,155 @@
+{% extends 'app/base.html' %}
+{% load custom_filters %}
+{% block contenido %}
+
+<div class="container">
+    <div class="row align-items-stretch"> 
+        <h1 class="text-center mb-4">Registro de Compra</h1>
+        <form method="post" class="entradaBodegaForm">
+            {% csrf_token %}
+            <div class="row">
+
+            <!-- COLUMNA IZQUIERDA: Lista de productos -->
+            <div class="col-md-6">
+                <!-- Card para la lista de productos -->
+                <div class="card h-100 border-secondary">
+                    <div class="card-header bg-secondary text-white">Lista de Productos</div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div class="cajaProducto">
+                            {{ producto_formset.management_form }}
+                            
+                            <div id="productos-container">
+                                {% for form in producto_formset %}
+                                <!-- Cada producto en su propio contenedor -->
+                                <div class="producto-form mb-3 p-3 border rounded">
+                                    <!-- 
+                                        En lugar de {{ form.as_p }}, desgranamos los campos 
+                                        para poder ubicar el botón de eliminar justo donde queremos.
+                                    -->
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            {{ form.producto.label_tag }}
+                                            {{ form.producto }}
+                                        </div>
+                                        <div class="col-md-4 mx-auto">
+                                            {{ form.cantidad_recibida.label_tag }}
+                                            {{ form.cantidad_recibida }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            {{ form.precio_total.label_tag }}
+                                            <div class="d-flex align-items-center">
+                                                {{ form.precio_total }}
+                                                <!-- Botón de eliminar, inicialmente oculto -->
+                                                <button type="button"
+                                                        class="btn btn-sm btn-danger remove-btn ms-2 d-none"
+                                                        onclick="removeForm(this)"
+                                                        id="btnCerrarFila">
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- COLUMNA DERECHA: Fecha de recepción, Formulario principal y Botones -->
+                <div class="col-lg-6">
+                    <div class="card h-100 border-secondary">
+                        <div class="card-header bg-secondary text-white">Detalles de la Entrada</div>
+                        <!-- Usamos flex-column para empujar los botones al final -->
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <label for="fecha_recepcion" class="form-label ml-3">Fecha de Recepción</label>
+                                <input type="date" class="form-control" id="fecha_recepcion" name="fecha_recepcion" required>
+                            </div>
+
+                            <div class="mb-3">
+                                {{ entrada_form.as_p }}
+                            </div>
+
+                            <!-- Botones al final -->
+                            <div class="mt-auto d-flex justify-content-end gap-3">
+                                <button type="button" class="btn btn-secondary" onclick="agregarProducto()">
+                                    Agregar Producto
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    Registrar Entrada
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+</div>
+
+<!-- Scripts de clonación y eliminación -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.producto-form');
+        forms.forEach((form, idx) => {
+            if (idx > 0) {
+                form.querySelector('.remove-btn').classList.remove('d-none');
+            }
+        });
+    });
+
+    function agregarProducto() {
+        const container = document.getElementById('productos-container');
+        const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+        const formIdx = container.querySelectorAll('.producto-form').length;
+
+        const firstForm = container.querySelector('.producto-form');
+        const newForm = firstForm.cloneNode(true);
+
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formIdx);
+        newForm.querySelectorAll('input, select, textarea').forEach(input => {
+            const name = input.getAttribute('name').replace(/-\d+-/, `-${formIdx}-`);
+            const id = input.getAttribute('id').replace(/-\d+-/, `-${formIdx}-`);
+            input.setAttribute('name', name);
+            input.setAttribute('id', id);
+            input.value = '';
+        });
+
+        container.appendChild(newForm);
+        totalForms.value = parseInt(totalForms.value) + 1;
+
+        newForm.querySelector('.remove-btn').classList.remove('d-none');
+    }
+
+    function removeForm(button) {
+        const formToRemove = button.closest('.producto-form');
+        formToRemove.remove();
+
+        const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+        totalForms.value = parseInt(totalForms.value) - 1;
+
+        const forms = document.querySelectorAll('.producto-form');
+        forms.forEach((form, idx) => {
+            form.querySelectorAll('input, select, textarea').forEach(input => {
+                const oldName = input.name;
+                const newName = oldName.replace(/-\d+-/, `-${idx}-`);
+                input.name = newName;
+
+                const oldId = input.id;
+                const newId = oldId.replace(/-\d+-/, `-${idx}-`);
+                input.id = newId;
+            });
+
+            const removeBtn = form.querySelector('.remove-btn');
+            if (idx === 0) {
+                removeBtn.classList.add('d-none');
+            } else {
+                removeBtn.classList.remove('d-none');
+            }
+        });
+    }
+</script>
+{% endblock %}
